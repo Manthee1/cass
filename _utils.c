@@ -7,6 +7,8 @@ void exitMsg(char* message, int code) {
 	printf("%s\n", message);
 	exit(code);
 }
+void clear() { system("clear || cls"); }
+
 char* toLowerStr(char* str) {
 	char* newStr = malloc(sizeof(char) * strlen(str));
 	for (int i = 0; i < strlen(str); i++) {

@@ -198,6 +198,39 @@ void interpret(int* PC) {
 	free(args);
 }
 
+void printDebug(int PC) {
+	clear();
+	printf("   PC: %d | Compare Flag: %d\n", PC, compareFlag);
+
+	for (int i = 0; i < data.length; i++) {
+		if (i < 0 || i >= data.length) continue;
+
+		// Line without \n at the end
+		char* line = malloc(sizeof(char) * strlen(data.data[i]));
+		strcpy(line, data.data[i]);
+		line = trimStr(line);
+		line[strlen(line) - 1] = '\0';
+
+		if (i == PC)
+			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, getGlobalLineNum(i), line);
+		else
+			printf(MAGENTA "  %3d " RESET "| %s", getGlobalLineNum(i), line);
+
+		// Print empty spaces after the line
+		for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
+		// If i is smaller then register count, print the register
+		// Print 3 registers per line
+		if (i * 3 < REGISTER_COUNT) {
+			printf("| ");
+			for (int j = 0; j < 3; j++) {
+				if (i * 3 + j >= REGISTER_COUNT) break;
+				printf("%2d: %5d | ", i * 3 + j, registers[i * 3 + j]);
+			}
+		}
+		printf("\n");
+	}
+}
+
 // Get arguments from main
 int main(int argc, char* argv[]) {
 	argc = 2;

@@ -1,18 +1,26 @@
 #include "./instructions.c"
 
+/**
+ *@brief Initializes file contents into a memory buffer
+ *
+ * @param file
+ * @return struct FileContents
+ */
 struct FileContents fileToArr(FILE* file) {
-	// Get length of file
-	int fileLen = 0;
-	fseek(file, 0, SEEK_END);
-	fileLen = ftell(file);
-	rewind(file);
+	// Get length of file in lines
+	int fileLen = getFileLength(file);
+	int length = 0;
+
+	// Initialize buffer
 	struct FileContents contents;
 	contents.length = 0;
+
+	// Allocate enough memory for buffer
 	contents.data = malloc(sizeof(char*) * fileLen);
 	char* line = NULL;
-	size_t len = 0;
-	size_t read;
+	size_t len = 0, read;
 
+	// Read file line by line
 	while ((read = getline(&line, &len, file)) != -1) {
 		contents.length++;
 		contents.data[contents.length - 1] = malloc(sizeof(char) * read);

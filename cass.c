@@ -126,62 +126,68 @@ int getArgType(char* arg) {
 	return -1;
 }
 
+/**
+ * @brief Parses the instruction at PC and runs it's function
+ * @param PC
+ */
 void interpret(int* PC) {
-	// Check if the line is a label
+	// Return if the line is a label
 	if (isLabel(*PC)) return;
 
 	char* line = data.data[*PC];
-
+	// Make sure the line is not empty or a comment
 	if (line[0] == ';') return;
 	if (trimStr(line)[0] == '\n') return;
 
-	// Interpret the text section
+	// Get the instruction name and lowercase it
 	char* instruction = malloc(sizeof(char) * MAX_INSTRUCTION_LENGTH);
 	strcpy(instruction, line);
 	instruction = toLowerStr(strtok(instruction, " "));
 
+	// Allocate memory for the arguments
 	char** args = malloc(sizeof(char*));
 	int argCount = 0;
 	// Get the arguments and keep instruction.
 	// Remove any \r or spaces or ',' from the arguments
 	while ((args[argCount] = strtok(NULL, " ,\r\t\v\f\n\0")) != NULL) {
 		argCount++;
-		args = realloc(args, sizeof(char*) * (argCount + 1));
+		args = realloc(args, sizeof(char*) * argCount + 1);
 	}
 
 	int foundInstruction = 0;
+	// We loop until we find the instruction
 	for (int i = 0; i < INSTRUCTION_COUNT; i++) {
 		struct Instruction* inst = (struct Instruction*)instructions[i];
-		if (strcmp(instruction, inst->name) == 0) {
-			if (argCount != inst->argCount) {
-				printf(RED "Error:" RESET " Invalid number of arguments for instruction " YELLOW "mov" RESET
-						   " at " MAGENTA "line %d" RESET "\n",
-					   getGlobalLineNum(*PC));
-				printf("Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n", inst->argCount,
-					   argCount);
+		// Skip if the instruction name doesn't match
+		if (strcmp(instruction, inst->name) != 0) continue;
+		// Check if the instruction is valid
+		if (argCount != inst->argCount) {
+			printf(RED "Error:" RESET " Invalid number of arguments for instruction " YELLOW "mov" RESET " at " MAGENTA
+					   "line %d" RESET "\n",
+				   getGlobalLineNum(*PC));
+			printf("Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n", inst->argCount, argCount);
+			printLine(*PC);
+			exit(1);
+		}
+		// Check if the arguments are valid
+		for (int j = 0; j < argCount; j++) {
+			int argType = getArgType(args[j]);
+			if (argType != inst->argTypes[j]) {
+				printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
+						   "line %d" RESET "\n",
+					   inst->name, getGlobalLineNum(*PC));
+				printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
+					   argTypeMap[argType]);
 				printLine(*PC);
 				exit(1);
 			}
-			// Check if the arguments are valid
-			for (int j = 0; j < argCount; j++) {
-				int argType = getArgType(args[j]);
-				if (argType != inst->argTypes[j]) {
-					printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
-							   "line %d" RESET "\n",
-						   inst->name, getGlobalLineNum(*PC));
-					printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
-						   argTypeMap[argType]);
-					printLine(*PC);
-					exit(1);
-				}
-			}
-
-			((struct Instruction*)instructions[i])->func(PC, argCount, args);
-			foundInstruction = 1;
-			break;
 		}
+		// Run the instruction
+		((struct Instruction*)instructions[i])->func(PC, argCount, args);
+		foundInstruction = 1;
+		break;
 	}
-
+	// If the instruction wasn't found, print a warning
 	if (!foundInstruction) {
 		printf(YELLOW "Warning:" RESET " Unknown instruction '" YELLOW "%s" RESET "' at " MAGENTA "line %d" RESET
 					  " - Ignoring\n",
@@ -189,7 +195,9 @@ void interpret(int* PC) {
 		printLine(*PC);
 	}
 	free(instruction);
+	free(args);
 }
+
 // Get arguments from main
 int main(int argc, char* argv[]) {
 	argc = 2;

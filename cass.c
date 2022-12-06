@@ -22,11 +22,13 @@ struct FileContents fileToArr(FILE* file) {
 	return contents;
 }
 
+/**
+ * @brief FInd the start of .TEXT and .DATA sections and save that info to data and text variables
+ * @param contents
+ */
 void getSections(struct FileContents contents) {
-	// Separate sections into their own arrays
-
 	text.length = data.length = -1;
-	// find the first line that is a data
+	// Find the first line that whit .data
 	int i = 0;
 	while (i < contents.length) {
 		if (strstr(contents.data[i], ".data") != NULL) {
@@ -37,17 +39,14 @@ void getSections(struct FileContents contents) {
 		i++;
 	}
 
-	text.data = NULL;
-	// if (text.length > 1) {
 	text.data = &contents.data[1];
 	text.length--;
-	// }
 
 	// Set data.data to the contents.data text.length + 1 index
 	data.data = &contents.data[text.length + 2];
 
 	if (data.length == -1) exitMsg(RED "Error: No .data section" RESET, 1);
-	if (data.length == 0) exitMsg(YELLOW "Warning: .data section is empty" RESET, 1);
+	if (data.length == 0) printf(YELLOW "Warning: .data section is empty" RESET);
 }
 
 /**

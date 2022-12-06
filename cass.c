@@ -149,6 +149,7 @@ void interpret(int* PC) {
 		args = realloc(args, sizeof(char*) * (argCount + 1));
 	}
 
+	int foundInstruction = 0;
 	for (int i = 0; i < INSTRUCTION_COUNT; i++) {
 		struct Instruction* inst = (struct Instruction*)instructions[i];
 		if (strcmp(instruction, inst->name) == 0) {
@@ -176,8 +177,16 @@ void interpret(int* PC) {
 			}
 
 			((struct Instruction*)instructions[i])->func(PC, argCount, args);
+			foundInstruction = 1;
 			break;
 		}
+	}
+
+	if (!foundInstruction) {
+		printf(YELLOW "Warning:" RESET " Unknown instruction '" YELLOW "%s" RESET "' at " MAGENTA "line %d" RESET
+					  " - Ignoring\n",
+			   instruction, getGlobalLineNum(*PC));
+		printLine(*PC);
 	}
 	free(instruction);
 }

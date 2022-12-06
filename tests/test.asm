@@ -1,11 +1,13 @@
 .data
 start:
-movc $1, 1
+movc $1, 0
 movc $2, 1
-main:
-IN 0, $1
-IN 0, $2
+loop:
 ADD $1, $2
-OUT 0, $1
-JMP main
+MOV $3, $1
+OUT $3
+OUTN 
+MOV $1, $2
+MOV $2, $3
+JMP loop
 

@@ -45,6 +45,7 @@ struct Labels labels = {0, NULL};
 #define MAX_NUMBER_SIZE pow(2, REGISTER_SIZE)
 
 int registers[REGISTER_COUNT] = {0};
+int compareFlag = 0;
 char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};
 
 int getGlobalLineNum(int line) { return line + text.length + 3; }

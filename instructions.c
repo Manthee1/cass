@@ -44,15 +44,15 @@ struct Instruction jmp = {"jmp", 1, (int[]){2}, (void*)jmpFunc};
 void addFunc(int* PC, int argCount, char* args[]) {
 	int reg1 = args[0][1] - '0';
 	int reg2 = args[1][1] - '0';
+	int sum = registers[reg1] + registers[reg2];
 	// Check if the register overflows
-	if (registers[reg1] + registers[reg2] > 255) {
-		registers[reg1] = 255;
+	if (sum > MAX_NUMBER_SIZE || sum < -MAX_NUMBER_SIZE) {
+		registers[reg1] = wrap(sum, MAX_NUMBER_SIZE, -MAX_NUMBER_SIZE);
 		printf(YELLOW "Warning:" RESET " Register " YELLOW "$%d" RESET " overflowed at " MAGENTA "line %d" RESET "\n\n",
 			   reg1, getGlobalLineNum(*PC));
 		return;
 	}
-
-	registers[reg1] += registers[reg2];
+	registers[reg1] = sum;
 }
 struct Instruction add = {"add", 2, (int[]){0, 0}, (void*)addFunc};
 

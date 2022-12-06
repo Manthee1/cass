@@ -27,3 +27,25 @@ char* trimStr(char* str) {
 	newStr[end - start + 1] = '\0';
 	return newStr;
 }
+
+int getFileLength(FILE* file) {
+	// Save pointer
+	fpos_t pos;
+	fgetpos(file, &pos);
+	// Get length
+	int length = 0;
+	char c;
+	while ((c = fgetc(file)) != EOF) {
+		if (c == '\n') length++;
+	}
+	// Reset pointer
+	fsetpos(file, &pos);
+
+	return length;
+}
+
+int wrap(int num, int min, int max) {
+	if (num < min) return max;
+	if (num > max) return min;
+	return num;
+}

@@ -41,6 +41,8 @@ struct FileContents data = {0, NULL};
 struct Labels labels = {0, NULL};
 
 #define REGISTER_COUNT 16
+#define REGISTER_SIZE 8
+#define MAX_NUMBER_SIZE pow(2, REGISTER_SIZE)
 
 int registers[REGISTER_COUNT] = {0};
 char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};

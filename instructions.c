@@ -71,6 +71,10 @@ void outFunc(int* PC, int argCount, char* args[]) {
 }
 struct Instruction out = {"out", 1, (int[]){0}, (void*)outFunc};
 
+// -----------------OUTN----------------
+void outnFunc(int* PC, int argCount, char* args[]) { addToOutput("\n"); }
+struct Instruction outn = {"outn", 0, (int[]){}, (void*)outnFunc};
+
 // -----------------IN-----------------
 void inFunc(int* PC, int argCount, char* args[]) {
 	int reg = args[0][1] - '0';
@@ -79,5 +83,7 @@ void inFunc(int* PC, int argCount, char* args[]) {
 struct Instruction in = {"in", 1, (int[]){0}, (void*)inFunc};
 
 #define MAX_INSTRUCTION_LENGTH 5
-#define INSTRUCTION_COUNT 8
-void* instructions[INSTRUCTION_COUNT] = {&mov, &movc, &jmp, &jc, &cmp, &add, &out, &in};
+#define INSTRUCTION_COUNT 9
+void* instructions[INSTRUCTION_COUNT] = {
+	&mov, &movc, &jmp, &jc, &cmp, &add, &out, &outn, &in,
+};

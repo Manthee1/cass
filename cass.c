@@ -233,8 +233,12 @@ void printDebug(int PC) {
 
 // Get arguments from main
 int main(int argc, char* argv[]) {
-	argc = 2;
-	argv[1] = "./tests/test.asm";
+	// argc = 2;
+	// argv[1] = "./tests/test.asm";
+	// Check if --debug is passed
+	int debug = 0;
+	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
+
 	// The first argument is the filename
 	if (argc < 2) {
 		printf("Usage: cass <filename>");
@@ -255,8 +259,21 @@ int main(int argc, char* argv[]) {
 	// Index labels
 	indexLabels();
 
+	int lastOutputLine = 0;
 	for (int PC = 0; PC < data.length; PC++) {
-		printLine(PC);
+		if (debug) {
+			printDebug(PC);
+			printf("Output\n");
+			for (int i = 0; i < outputLines; i++) printf("%s", output[i]);
+			printf("\n");
+
+		} else {
+			if (lastOutputLine != outputLines) {
+				printf("%s", output[outputLines - 1]);
+				lastOutputLine = outputLines;
+			}
+		}
+
 		interpret(&PC);
 		usleep(200000);
 	}

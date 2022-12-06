@@ -24,6 +24,10 @@ struct Label {
 	int position;
 	char* name;
 };
+struct Labels {
+	int length;
+	struct Label* data;
+};
 
 struct Instruction {
 	char* name;
@@ -34,8 +38,7 @@ struct Instruction {
 
 struct FileContents text = {0, NULL};
 struct FileContents data = {0, NULL};
-int labelCount = 0;
-struct Label* labels = NULL;
+struct Labels labels = {0, NULL};
 
 #define REGISTER_COUNT 16
 
@@ -43,16 +46,18 @@ int registers[REGISTER_COUNT] = {0};
 
 int getGlobalLineNum(int line) { return line + text.length + 3; }
 int isLabel(int line) {
-	for (int i = 0; i < labelCount; i++)
-		if (labels[i].position == line) return 1;
+	for (int i = 0; i < labels.length; i++) {
+		if (labels.data[i].position == line) return 1;
+	}
 	return 0;
 }
-int getLabelPosition(char* label) {
-	for (int i = 0; i < labelCount; i++)
-		if (strcmp(labels[i].name, label) == 0) return labels[i].position;
-	return -1;
+struct Label getLabel(char* label) {
+	if (labels.data == NULL || labels.length == 0) return (struct Label){-1, NULL};
+	for (int i = 0; i < labels.length; i++)
+		if (strcmp(labels.data[i].name, label) == 0) return labels.data[i];
+	return (struct Label){-1, NULL};
 }
-
+int getLabelPosition(char* label) { return getLabel(label).position; }
 void printLine(int lineNum) {
 	char* line = data.data[lineNum];
 	printf(MAGENTA "\t%d " RESET "| %s", getGlobalLineNum(lineNum), data.data[lineNum]);

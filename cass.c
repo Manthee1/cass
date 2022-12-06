@@ -50,34 +50,50 @@ void getSections(struct FileContents contents) {
 	if (data.length == 0) exitMsg(YELLOW "Warning: .data section is empty" RESET, 1);
 }
 
-struct Label* indexLabels(struct FileContents data) {
-	struct Label* labels = malloc(sizeof(struct Label) * data.length);
+/**
+ * @brief Finds the labels and saves them to the labels struct
+ **/
+void indexLabels() {
+	// Free labels if they already exist
+	if (labels.length > 0) {
+		for (int i = 0; i < labels.length; i++) free(labels.data[i].name);
+		free(labels.data);
+	}
+	labels.length = 0;
+
+	char* labelName = NULL;
 	for (int i = 0; i < data.length; i++) {
 		// If the last character is a colon, it's a label
 		if (data.data[i][strlen(data.data[i]) - 2] == ':') {
-			char* name = malloc(sizeof(char) * strlen(data.data[i]));
-			strcpy(name, data.data[i]);
-			name[strlen(name) - 2] = '\0';
+			labelName = realloc(labelName, sizeof(char) * strlen(data.data[i]));
+			strcpy(labelName, data.data[i]);
+			labelName[strlen(labelName) - 2] = '\0';
 
-			// Check if the label is already defined
-			int skip = 0;
-			for (int j = 0; j < labelCount; j++)
-				if (strcmp(labels[j].name, name) == 0) {
-					printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
-								  "line %d" RESET " - Ignoring\n" RESET,
-						   name, getGlobalLineNum(labels[j].position));
-					printf(MAGENTA "\t%d " RESET "| %s:\n\n", getGlobalLineNum(i), name);
-					skip = 1;
-					break;
-				}
-			if (skip) continue;
+			struct Label duplicateLabel = getLabel(labelName);
+			int labelExists = duplicateLabel.position;
 
-			labels[labelCount].position = i;
-			labels[labelCount].name = name;
-			labelCount++;
+			if (labelExists != -1) {
+				printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
+							  "line %d" RESET " - Ignoring\n" RESET,
+					   labelName, getGlobalLineNum(labelExists));
+				printLine(labelExists);
+				printf("\n");
+				continue;
+			}
+
+			// Allocate memory for the label
+			labels.data = realloc(labels.data, sizeof(struct Label) * labels.length + 1);
+
+			// Set the label's name
+			labels.data[labels.length].name = malloc(sizeof(char) * strlen(labelName));
+			strcpy(labels.data[labels.length].name, labelName);
+
+			// Set the label's line number
+			labels.data[labels.length].position = i;
+			labels.length++;
 		}
 	}
-	return labels;
+	free(labelName);
 }
 
 int getArgType(char* arg) {
@@ -94,8 +110,8 @@ int getArgType(char* arg) {
 	}
 
 	// Check if it's a label
-	for (int i = 0; i < labelCount; i++)
-		if (strcmp(labels[i].name, arg) == 0) return 2;
+	for (int i = 0; i < labels.length; i++)
+		if (strcmp(arg, labels.data[i].name) == 0) return 2;
 
 	// Check if it's a data pointer
 	if (arg[0] == '#') return 3;
@@ -192,11 +208,10 @@ int main(int argc, char* argv[]) {
 
 	// Read file
 	struct FileContents contents = fileToArr(file);
-
+	// Find the sections
 	getSections(contents);
-
 	// Index labels
-	labels = indexLabels(data);
+	indexLabels();
 
 	for (int PC = 0; PC < data.length; PC++) {
 		printLine(PC);

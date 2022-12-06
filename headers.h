@@ -41,8 +41,8 @@ struct FileContents data = {0, NULL};
 struct Labels labels = {0, NULL};
 
 #define REGISTER_COUNT 16
-#define REGISTER_SIZE 8
-#define MAX_NUMBER_SIZE pow(2, REGISTER_SIZE)
+#define REGISTER_SIZE 32
+#define MAX_NUMBER_SIZE (int)pow(2, REGISTER_SIZE)
 
 int registers[REGISTER_COUNT] = {0};
 int compareFlag = 0;

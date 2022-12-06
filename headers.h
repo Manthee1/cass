@@ -47,6 +47,14 @@ struct Labels labels = {0, NULL};
 int registers[REGISTER_COUNT] = {0};
 int compareFlag = 0;
 char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};
+char** output = NULL;
+int outputLines = 0;
+void addToOutput(char* str) {
+	outputLines++;
+	output = realloc(output, outputLines * sizeof(char*));
+	output[outputLines - 1] = malloc(sizeof(char) * strlen(str));
+	strcpy(output[outputLines - 1], str);
+}
 
 int getGlobalLineNum(int line) { return line + text.length + 3; }
 int isLabel(int line) {

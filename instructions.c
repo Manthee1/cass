@@ -65,7 +65,9 @@ struct Instruction add = {"add", 2, (int[]){0, 0}, (void*)addFunc};
 // -----------------OUT-----------------
 void outFunc(int* PC, int argCount, char* args[]) {
 	int reg = args[0][1] - '0';
-	printf("%d", registers[reg]);
+	char out[10];
+	sprintf(out, "%d", registers[reg]);
+	addToOutput(out);
 }
 struct Instruction out = {"out", 1, (int[]){0}, (void*)outFunc};
 

@@ -43,6 +43,7 @@ struct Labels labels = {0, NULL};
 #define REGISTER_COUNT 16
 
 int registers[REGISTER_COUNT] = {0};
+char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};
 
 int getGlobalLineNum(int line) { return line + text.length + 3; }
 int isLabel(int line) {

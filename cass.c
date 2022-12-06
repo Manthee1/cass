@@ -126,21 +126,6 @@ int getArgType(char* arg) {
 	return -1;
 }
 
-char* argTypeToString(int type) {
-	switch (type) {
-	case 0:
-		return "Register";
-	case 1:
-		return "Number";
-	case 2:
-		return "Label";
-	case 3:
-		return "Data Pointer";
-	default:
-		return "Unknown";
-	}
-}
-
 void interpret(int* PC) {
 	// Check if the line is a label
 	if (isLabel(*PC)) return;
@@ -183,8 +168,8 @@ void interpret(int* PC) {
 					printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
 							   "line %d" RESET "\n",
 						   inst->name, getGlobalLineNum(*PC));
-					printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n",
-						   argTypeToString(inst->argTypes[j]), argTypeToString(argType));
+					printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
+						   argTypeMap[argType]);
 					printLine(*PC);
 					exit(1);
 				}

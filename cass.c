@@ -1,5 +1,8 @@
 #include "./instructions.c"
 
+// TODO: Make a validateCode function that checks if the code is valid
+// TODO: Parse the code and save it into a struct (lineNum, instruction, argsCount, args)
+// TODO: Parse the data and save it into a struct (name, type, value, size)
 /**
  *@brief Initializes file contents into a memory buffer
  *
@@ -7,6 +10,7 @@
  * @return struct FileContents
  */
 struct FileContents fileToArr(FILE* file) {
+	// TODO: Allocate memory for the whole file first and then just change pointers to the lines
 	// Get length of file in lines
 	int fileLen = getFileLength(file);
 	int length = 0;
@@ -15,16 +19,16 @@ struct FileContents fileToArr(FILE* file) {
 	struct FileContents contents;
 	contents.length = 0;
 
-	// Allocate enough memory for buffer
+	// Allocate enough memory for the buffer
 	contents.data = malloc(sizeof(char*) * fileLen);
 	char* line = NULL;
 	size_t len = 0, read;
 
-	// Read file line by line
+	//  Read file line by line
 	while ((read = getline(&line, &len, file)) != -1) {
+		contents.data[contents.length] = malloc(sizeof(char) * read);
+		strcpy(contents.data[contents.length], line);
 		contents.length++;
-		contents.data[contents.length - 1] = malloc(sizeof(char) * read);
-		strcpy(contents.data[contents.length - 1], line);
 	}
 	free(line);
 	return contents;
@@ -71,34 +75,33 @@ void indexLabels() {
 	char* labelName = NULL;
 	for (int i = 0; i < data.length; i++) {
 		// If the last character is a colon, it's a label
-		if (data.data[i][strlen(data.data[i]) - 2] == ':') {
-			labelName = realloc(labelName, sizeof(char) * strlen(data.data[i]));
-			strcpy(labelName, data.data[i]);
-			labelName[strlen(labelName) - 2] = '\0';
+		if (data.data[i][strlen(data.data[i]) - 2] != ':') continue;
+		labelName = realloc(labelName, sizeof(char) * strlen(data.data[i]));
+		strcpy(labelName, data.data[i]);
+		labelName[strlen(labelName) - 2] = '\0';
 
-			struct Label duplicateLabel = getLabel(labelName);
-			int labelExists = duplicateLabel.position;
+		struct Label duplicateLabel = getLabel(labelName);
+		int labelExists = duplicateLabel.position;
 
-			if (labelExists != -1) {
-				printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
-							  "line %d" RESET " - Ignoring\n" RESET,
-					   labelName, getGlobalLineNum(labelExists));
-				printLine(labelExists);
-				printf("\n");
-				continue;
-			}
-
-			// Allocate memory for the label
-			labels.data = realloc(labels.data, sizeof(struct Label) * labels.length + 1);
-
-			// Set the label's name
-			labels.data[labels.length].name = malloc(sizeof(char) * strlen(labelName));
-			strcpy(labels.data[labels.length].name, labelName);
-
-			// Set the label's line number
-			labels.data[labels.length].position = i;
-			labels.length++;
+		if (labelExists != -1) {
+			printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
+						  "line %d" RESET " - Ignoring\n" RESET,
+				   labelName, getGlobalLineNum(labelExists));
+			printLine(labelExists);
+			printf("\n");
+			continue;
 		}
+
+		// Allocate memory for the label
+		labels.data = realloc(labels.data, sizeof(struct Label) * labels.length + 1);
+
+		// Set the label's name
+		labels.data[labels.length].name = malloc(sizeof(char) * strlen(labelName));
+		strcpy(labels.data[labels.length].name, labelName);
+
+		// Set the label's line number
+		labels.data[labels.length].position = i;
+		labels.length++;
 	}
 	free(labelName);
 }
@@ -113,12 +116,11 @@ int getArgType(char* arg) {
 	// Check if it's a number
 	if (isdigit(arg[0]) || arg[0] == '-') {
 		int num = atoi(arg);
-		if (num >= 0 && num < 256) return 1;
+		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return 1;
 	}
 
 	// Check if it's a label
-	for (int i = 0; i < labels.length; i++)
-		if (strcmp(arg, labels.data[i].name) == 0) return 2;
+	if (getLabel(arg).position != -1) return 2;
 
 	// Check if it's a data pointer
 	if (arg[0] == '#') return 3;
@@ -132,7 +134,7 @@ int getArgType(char* arg) {
  */
 void interpret(int* PC) {
 	// Return if the line is a label
-	if (isLabel(*PC)) return;
+	if (isLabelOnLine(*PC)) return;
 
 	char* line = data.data[*PC];
 	// Make sure the line is not empty or a comment
@@ -211,6 +213,7 @@ void printDebug(int PC) {
 		line = trimStr(line);
 		line[strlen(line) - 1] = '\0';
 
+		// If we are at the PC, print a '>' before the line
 		if (i == PC)
 			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, getGlobalLineNum(i), line);
 		else
@@ -218,6 +221,7 @@ void printDebug(int PC) {
 
 		// Print empty spaces after the line
 		for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
+
 		// If i is smaller then register count, print the register
 		// Print 3 registers per line
 		if (i * 3 < REGISTER_COUNT) {
@@ -267,11 +271,9 @@ int main(int argc, char* argv[]) {
 			for (int i = 0; i < outputLines; i++) printf("%s", output[i]);
 			printf("\n");
 
-		} else {
-			if (lastOutputLine != outputLines) {
-				printf("%s", output[outputLines - 1]);
-				lastOutputLine = outputLines;
-			}
+		} else if (lastOutputLine != outputLines) {
+			printf("%s", output[outputLines - 1]);
+			lastOutputLine = outputLines;
 		}
 
 		interpret(&PC);

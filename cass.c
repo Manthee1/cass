@@ -10,27 +10,35 @@
  * @return struct FileContents
  */
 struct FileContents fileToArr(FILE* file) {
-	// TODO: Allocate memory for the whole file first and then just change pointers to the lines
 	// Get length of file in lines
+	int fileLenLines = getFileLengthLines(file);
 	int fileLen = getFileLength(file);
-	int length = 0;
 
 	// Initialize buffer
 	struct FileContents contents;
 	contents.length = 0;
 
 	// Allocate enough memory for the buffer
-	contents.data = malloc(sizeof(char*) * fileLen);
-	char* line = NULL;
-	size_t len = 0, read;
+	contents.data = malloc(sizeof(char*) * fileLenLines);
+	char* lines = malloc(sizeof(char) * fileLen + 1);
+	// Place 'E' at the end of the buffer
+	lines[fileLen] = 'E';
 
-	//  Read file line by line
-	while ((read = getline(&line, &len, file)) != -1) {
-		contents.data[contents.length] = malloc(sizeof(char) * read);
-		strcpy(contents.data[contents.length], line);
-		contents.length++;
+	// line pointer at index 0 of lines
+	char* line = lines;
+	// Read file into buffer
+	char c;
+	for (int i = 0; i < fileLen; i++) {
+		c = fgetc(file);
+		if (c == '\n') {
+			contents.data[contents.length] = line;
+			contents.length++;
+			line = &lines[i + 1];
+			continue;
+		}
+		lines[i] = c;
 	}
-	free(line);
+
 	return contents;
 }
 
@@ -43,6 +51,7 @@ void getSections(struct FileContents contents) {
 	// Find the first line that whit .data
 	int i = 0;
 	while (i < contents.length) {
+		char* contentDataI = contents.data[i];
 		if (strstr(contents.data[i], ".data") != NULL) {
 			text.length = i;
 			data.length = contents.length - i - 1;
@@ -75,10 +84,10 @@ void indexLabels() {
 	char* labelName = NULL;
 	for (int i = 0; i < data.length; i++) {
 		// If the last character is a colon, it's a label
-		if (data.data[i][strlen(data.data[i]) - 2] != ':') continue;
+		if (data.data[i][strlen(data.data[i]) - 1] != ':') continue;
 		labelName = realloc(labelName, sizeof(char) * strlen(data.data[i]));
 		strcpy(labelName, data.data[i]);
-		labelName[strlen(labelName) - 2] = '\0';
+		labelName[strlen(labelName) - 1] = '\0';
 
 		struct Label duplicateLabel = getLabel(labelName);
 		int labelExists = duplicateLabel.position;

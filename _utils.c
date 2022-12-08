@@ -30,16 +30,32 @@ char* trimStr(char* str) {
 	return newStr;
 }
 
+int getFileLengthLines(FILE* file) {
+	// Save pointer
+	fpos_t pos;
+	fgetpos(file, &pos);
+
+	// Get amount of lines
+	int length = 0;
+	char c;
+	while ((c = fgetc(file)) != EOF)
+		if (c == '\n') length++;
+
+	// Reset pointer
+	fsetpos(file, &pos);
+
+	return length;
+}
+
 int getFileLength(FILE* file) {
 	// Save pointer
 	fpos_t pos;
 	fgetpos(file, &pos);
-	// Get length
-	int length = 0;
-	char c;
-	while ((c = fgetc(file)) != EOF) {
-		if (c == '\n') length++;
-	}
+
+	// Get amount of characters
+	fseek(file, 0, SEEK_END);
+	int length = ftell(file);
+
 	// Reset pointer
 	fsetpos(file, &pos);
 

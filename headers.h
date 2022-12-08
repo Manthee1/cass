@@ -58,9 +58,9 @@ void addToOutput(char* str) {
 
 int getGlobalLineNum(int line) { return line + text.length + 3; }
 int isLabelOnLine(int line) {
-	for (int i = 0; i < labels.length; i++) {
+	for (int i = 0; i < labels.length; i++)
 		if (labels.data[i].position == line) return 1;
-	}
+
 	return 0;
 }
 struct Label getLabel(char* label) {

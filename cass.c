@@ -1,7 +1,5 @@
 #include "./instructions.c"
 
-// TODO: Make a validateCode function that checks if the code is valid
-// TODO: Parse the code and save it into a struct (lineNum, instruction, argsCount, args)
 // TODO: Parse the data and save it into a struct (name, type, value, size)
 /**
  *@brief Initializes file contents into a memory buffer
@@ -70,6 +68,199 @@ void getSections(struct FileContents contents) {
 	if (data.length == 0) printf(YELLOW "Warning: .data section is empty" RESET);
 }
 
+int getArgType(char* arg) {
+	// Check if it's a register
+	if (arg[0] == '$') {
+		int reg = atoi(&arg[1]);
+		if (reg >= 0 && reg < REGISTER_COUNT) return 0;
+	}
+
+	// Check if it's a number
+	if (isdigit(arg[0]) || arg[0] == '-') {
+		int num = atoi(arg);
+		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return 1;
+	}
+
+	// Check if it's a label
+	if (getLabel(arg).lineNum != -1) return 2;
+
+	// Check if it's a data pointer
+	if (arg[0] == '#') return 3;
+
+	return -1;
+}
+
+void processLabel(int lineNum) {
+	// Get the label name
+	char* str = data.data[lineNum];
+	char* labelName = malloc(sizeof(char) * strlen(str));
+	strcpy(labelName, str);
+	int strLen = strlen(labelName);
+	labelName[strLen - 1] = '\0';
+
+	// Check if the label already exists
+	struct Label duplicateLabel = getLabel(labelName);
+	int labelExists = duplicateLabel.lineNum;
+
+	if (labelExists != -1) {
+		printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA "line %d" RESET
+					  " - Ignoring\n" RESET,
+			   labelName, getGlobalLineNum(labelExists));
+		printLine(labelExists);
+		printf("\n");
+		return;
+	}
+
+	// Allocate memory for the label
+	labels.data = realloc(labels.data, sizeof(struct Label) * (labels.length + 1));
+
+	// Set the label's name
+	labels.data[labels.length].name = labelName;
+
+	// Set the label's line number
+	labels.data[labels.length].lineNum = lineNum;
+
+	// program.length - 1 because when we jump to the label, PC still gets incremented in the for loop in main.
+	labels.data[labels.length].PC = program.length - 1;
+	labels.length++;
+}
+
+int convertArg(char* arg, int argType) {
+	int val = 0;
+	switch (argType) {
+		{
+		case 0:
+			// Register
+			sscanf(arg, "$%d", &val);
+			break;
+		case 1:
+			// Number
+			return atoi(arg);
+		case 2:
+			// Label
+			return getLabel(arg).PC;
+		// case 3:
+		// 	// Data pointer
+		// 	return getData(arg).lineNum;
+		default:
+			exitMsg(RED "Internal Error: Invalid argument type" RESET, 1);
+		}
+	}
+	return val;
+}
+
+void processInstruction(int lineNum) {
+	char* line = data.data[lineNum];
+	int strLen = strlen(line);
+
+	// Get the instruction name and lowercase it
+	char* instruction = malloc(sizeof(char) * (strLen + 1));
+	strcpy(instruction, line);
+	instruction = strtok(instruction, " ");
+	toLowerStr(instruction);
+
+	// Allocate memory for the arguments
+	char* arg = malloc(sizeof(char) * strLen);
+	int* args = NULL;
+	int* argTypes = NULL;
+	int argCount = 0;
+	// Get the arguments and keep instruction.
+	// Remove any \r or spaces or ',' from the arguments
+	// strtok(NULL, " ,\r\t\v\f\n\0")
+	char c = '\0';
+	int argLen = 0;
+
+	for (int i = strlen(instruction) + 1; i < strLen + 1; i++) {
+		c = line[i];
+		if (c == ' ' || c == ',' || c == '\r' || c == '\t' || c == '\v' || c == '\f' || c == '\n' || c == '\0') {
+			if (argLen == 0) continue;
+			arg[argLen] = '\0';
+			argLen = 0;
+			argCount++;
+			int argType = getArgType(arg);
+			args = realloc(args, sizeof(int) * argCount);
+			argTypes = realloc(argTypes, sizeof(int) * argCount);
+			args[argCount - 1] = convertArg(arg, argType);
+			argTypes[argCount - 1] = argType;
+			continue;
+		}
+		arg[argLen++] = c;
+	}
+	free(arg);
+	int foundInstruction = 0;
+	// We loop until we find the instruction
+	for (int instructionIndex = 0; instructionIndex < INSTRUCTION_COUNT; instructionIndex++) {
+		struct Instruction* inst = (struct Instruction*)instructions[instructionIndex];
+		// Skip if the instruction name doesn't match
+		if (strcmp(instruction, inst->name) != 0) continue;
+		// Check if the instruction is valid
+		if (argCount != inst->argCount) {
+			printf(RED "Error:" RESET " Invalid number of arguments for instruction " YELLOW "mov" RESET " at " MAGENTA
+					   "line %d" RESET "\n",
+				   getGlobalLineNum(lineNum));
+			printf("Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n", inst->argCount, argCount);
+			printLine(lineNum);
+			break;
+		}
+		// Check if the arguments are valid
+		for (int j = 0; j < argCount; j++) {
+			if (argTypes[j] != inst->argTypes[j]) {
+				printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
+						   "line %d" RESET "\n",
+					   inst->name, getGlobalLineNum(lineNum));
+				printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
+					   argTypeMap[argTypes[j]]);
+				printLine(lineNum);
+				break;
+			}
+		}
+		// Run the instruction
+		foundInstruction = 1;
+		// Add to program
+		program.instructions = realloc(program.instructions, sizeof(struct ProgramInstruction) * (program.length + 1));
+		struct ProgramInstruction* progInst = malloc(sizeof(struct ProgramInstruction));
+		progInst->lineNum = lineNum;
+		progInst->args = args;
+		progInst->instructionIndex = instructionIndex;
+
+		program.instructions[program.length] = *progInst;
+		program.length++;
+		// progInst = {lineNum, convertedArgs, instructionIndex};
+		break;
+	}
+	// If the instruction wasn't found, print a warning
+	if (!foundInstruction) {
+		printf(YELLOW "Warning:" RESET " Unknown instruction '" YELLOW "%s" RESET "' at " MAGENTA "line %d" RESET
+					  " - Ignoring\n",
+			   instruction, getGlobalLineNum(lineNum));
+		printLine(lineNum);
+	}
+	free(instruction);
+}
+
+/**
+ *@brief Check if there are any errors in the code
+ */
+void processProgram() {
+	// Check if there are any labels that are not defined
+	for (int i = 0; i < data.length; i++) {
+		char* line = data.data[i];
+		if (line[0] == '\n' || line[0] == '\0') continue;
+
+		// If the line is a comment, skip it
+		if (isComment(line)) continue;
+
+		// If the line is a label, check if it already exists, if not, add it to the labels array
+		if (isLabel(line)) {
+			processLabel(i);
+			continue;
+		}
+
+		// Otherwise the line is an instruction
+		processInstruction(i);
+	}
+}
+
 /**
  * @brief Finds the labels and saves them to the labels struct
  **/
@@ -90,7 +281,7 @@ void indexLabels() {
 		labelName[strlen(labelName) - 1] = '\0';
 
 		struct Label duplicateLabel = getLabel(labelName);
-		int labelExists = duplicateLabel.position;
+		int labelExists = duplicateLabel.lineNum;
 
 		if (labelExists != -1) {
 			printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
@@ -102,116 +293,24 @@ void indexLabels() {
 		}
 
 		// Allocate memory for the label
-		labels.data = realloc(labels.data, sizeof(struct Label) * labels.length + 1);
+		labels.data = realloc(labels.data, sizeof(struct Label) * (labels.length + 1));
 
 		// Set the label's name
 		labels.data[labels.length].name = malloc(sizeof(char) * strlen(labelName));
 		strcpy(labels.data[labels.length].name, labelName);
 
 		// Set the label's line number
-		labels.data[labels.length].position = i;
+		labels.data[labels.length].lineNum = i;
+		labels.data[labels.length].PC = program.length + 1;
+
 		labels.length++;
 	}
 	free(labelName);
 }
 
-int getArgType(char* arg) {
-	// Check if it's a register
-	if (arg[0] == '$') {
-		int reg = atoi(&arg[1]);
-		if (reg >= 0 && reg < REGISTER_COUNT) return 0;
-	}
-
-	// Check if it's a number
-	if (isdigit(arg[0]) || arg[0] == '-') {
-		int num = atoi(arg);
-		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return 1;
-	}
-
-	// Check if it's a label
-	if (getLabel(arg).position != -1) return 2;
-
-	// Check if it's a data pointer
-	if (arg[0] == '#') return 3;
-
-	return -1;
-}
-
-/**
- * @brief Parses the instruction at PC and runs it's function
- * @param PC
- */
-void interpret(int* PC) {
-	// Return if the line is a label
-	if (isLabelOnLine(*PC)) return;
-
-	char* line = data.data[*PC];
-	// Make sure the line is not empty or a comment
-	if (line[0] == ';') return;
-	if (trimStr(line)[0] == '\n') return;
-
-	// Get the instruction name and lowercase it
-	char* instruction = malloc(sizeof(char) * MAX_INSTRUCTION_LENGTH);
-	strcpy(instruction, line);
-	instruction = toLowerStr(strtok(instruction, " "));
-
-	// Allocate memory for the arguments
-	char** args = malloc(sizeof(char*));
-	int argCount = 0;
-	// Get the arguments and keep instruction.
-	// Remove any \r or spaces or ',' from the arguments
-	while ((args[argCount] = strtok(NULL, " ,\r\t\v\f\n\0")) != NULL) {
-		argCount++;
-		args = realloc(args, sizeof(char*) * argCount + 1);
-	}
-
-	int foundInstruction = 0;
-	// We loop until we find the instruction
-	for (int i = 0; i < INSTRUCTION_COUNT; i++) {
-		struct Instruction* inst = (struct Instruction*)instructions[i];
-		// Skip if the instruction name doesn't match
-		if (strcmp(instruction, inst->name) != 0) continue;
-		// Check if the instruction is valid
-		if (argCount != inst->argCount) {
-			printf(RED "Error:" RESET " Invalid number of arguments for instruction " YELLOW "mov" RESET " at " MAGENTA
-					   "line %d" RESET "\n",
-				   getGlobalLineNum(*PC));
-			printf("Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n", inst->argCount, argCount);
-			printLine(*PC);
-			exit(1);
-		}
-		// Check if the arguments are valid
-		for (int j = 0; j < argCount; j++) {
-			int argType = getArgType(args[j]);
-			if (argType != inst->argTypes[j]) {
-				printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
-						   "line %d" RESET "\n",
-					   inst->name, getGlobalLineNum(*PC));
-				printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
-					   argTypeMap[argType]);
-				printLine(*PC);
-				exit(1);
-			}
-		}
-		// Run the instruction
-		((struct Instruction*)instructions[i])->func(PC, argCount, args);
-		foundInstruction = 1;
-		break;
-	}
-	// If the instruction wasn't found, print a warning
-	if (!foundInstruction) {
-		printf(YELLOW "Warning:" RESET " Unknown instruction '" YELLOW "%s" RESET "' at " MAGENTA "line %d" RESET
-					  " - Ignoring\n",
-			   instruction, getGlobalLineNum(*PC));
-		printLine(*PC);
-	}
-	free(instruction);
-	free(args);
-}
-
 void printDebug(int PC) {
 	clear();
-	printf("   PC: %d | Compare Flag: %d\n", PC, compareFlag);
+	printf("   Line: %d | Compare Flag: %d\n", getGlobalLineNum(PC), compareFlag);
 
 	for (int i = 0; i < data.length; i++) {
 		if (i < 0 || i >= data.length) continue;
@@ -246,10 +345,10 @@ void printDebug(int PC) {
 
 // Get arguments from main
 int main(int argc, char* argv[]) {
-	// argc = 2;
-	// argv[1] = "./tests/test.asm";
+	argc = 3;
+	argv[1] = "./tests/test.asm";
 	// Check if --debug is passed
-	int debug = 0;
+	int debug = 1;
 	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
 
 	// The first argument is the filename
@@ -269,13 +368,15 @@ int main(int argc, char* argv[]) {
 	struct FileContents contents = fileToArr(file);
 	// Find the sections
 	getSections(contents);
+	processProgram();
 	// Index labels
-	indexLabels();
+	// indexLabels();
 
 	int lastOutputLine = 0;
-	for (int PC = 0; PC < data.length; PC++) {
+	for (int PC = 0; PC < program.length; PC++) {
+		struct ProgramInstruction programInstruction = program.instructions[PC];
 		if (debug) {
-			printDebug(PC);
+			printDebug(programInstruction.lineNum);
 			printf("Output\n");
 			for (int i = 0; i < outputLines; i++) printf("%s", output[i]);
 			printf("\n");
@@ -285,7 +386,8 @@ int main(int argc, char* argv[]) {
 			lastOutputLine = outputLines;
 		}
 
-		interpret(&PC);
+		// Interpret the instruction
+		((struct Instruction*)instructions[programInstruction.instructionIndex])->func(&PC, programInstruction.args);
 		usleep(200000);
 	}
 

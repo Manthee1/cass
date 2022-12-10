@@ -21,7 +21,8 @@ struct FileContents {
 	char** data;
 };
 struct Label {
-	int position;
+	int lineNum;
+	int PC;
 	char* name;
 };
 struct Labels {
@@ -33,13 +34,24 @@ struct Instruction {
 	char* name;
 	int argCount;
 	int* argTypes;
-	void (*func)(int*, int, char**);
+	void (*func)(int*, ...);
+};
+
+struct ProgramInstruction {
+	int lineNum;
+	int* args;
+	int instructionIndex;  // A pointer would take up double the space. so we use an index instead
+};
+
+struct Program {
+	int length;
+	struct ProgramInstruction* instructions;
 };
 
 struct FileContents text = {0, NULL};
 struct FileContents data = {0, NULL};
 struct Labels labels = {0, NULL};
-
+struct Program program = {0, NULL};
 #define REGISTER_COUNT 16
 #define REGISTER_SIZE 32
 #define MAX_NUMBER_SIZE (int)pow(2, REGISTER_SIZE)
@@ -59,17 +71,17 @@ void addToOutput(char* str) {
 int getGlobalLineNum(int line) { return line + text.length + 3; }
 int isLabelOnLine(int line) {
 	for (int i = 0; i < labels.length; i++)
-		if (labels.data[i].position == line) return 1;
+		if (labels.data[i].lineNum == line) return 1;
 
 	return 0;
 }
 struct Label getLabel(char* label) {
-	if (labels.data == NULL || labels.length == 0) return (struct Label){-1, NULL};
+	if (labels.data == NULL || labels.length == 0) return (struct Label){-1, -1, NULL};
 	for (int i = 0; i < labels.length; i++)
 		if (strcmp(labels.data[i].name, label) == 0) return labels.data[i];
-	return (struct Label){-1, NULL};
+	return (struct Label){-1, -1, NULL};
 }
-int getLabelPosition(char* label) { return getLabel(label).position; }
+int getLabelPosition(char* label) { return getLabel(label).PC; }
 void printLine(int lineNum) {
 	char* line = data.data[lineNum];
 	printf(MAGENTA "\t%d " RESET "| %s", getGlobalLineNum(lineNum), data.data[lineNum]);

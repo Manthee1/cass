@@ -4,39 +4,35 @@
 // ========================= INSTRUCTIONS =========================
 
 // -----------------MOV-----------------
-void movFunc(int* PC, int argCount, char* args[]) {
-	int reg1 = args[0][1] - '0';
-	int reg2 = args[1][1] - '0';
+void movFunc(int* PC, int args[]) {
+	int reg1 = args[0];
+	int reg2 = args[1];
 	registers[reg1] = registers[reg2];
 }
 struct Instruction mov = {"mov", 2, (int[]){0, 0}, (void*)movFunc};
 
 // -----------------MOVC-----------------
-void movcFunc(int* PC, int argCount, char* args[]) {
-	int reg = args[0][1] - '0';
-	int value = atoi(args[1]);
+void movcFunc(int* PC, int args[]) {
+	int reg = args[0];
+	int value = args[1];
 	registers[reg] = value;
 }
 struct Instruction movc = {"movc", 2, (int[]){0, 1}, (void*)movcFunc};
 
 // -----------------JMP-----------------
-void jmpFunc(int* PC, int argCount, char* args[]) {
-	int label = getLabelPosition(args[0]);
-	*PC = label;
-}
+void jmpFunc(int* PC, int args[]) { *PC = args[0]; }
 struct Instruction jmp = {"jmp", 1, (int[]){2}, (void*)jmpFunc};
 
 // -----------------JC-----------------
-void jcFunc(int* PC, int argCount, char* args[]) {
-	int label = getLabelPosition(args[0]);
-	if (registers[0] == 0) *PC = label;
+void jcFunc(int* PC, int args[]) {
+	if (registers[0] == 0) *PC = args[0];
 }
 struct Instruction jc = {"jc", 1, (int[]){2}, (void*)jcFunc};
 
 // -----------------CMP-----------------
-void cmpFunc(int* PC, int argCount, char* args[]) {
-	int reg1 = args[0][1] - '0';
-	int reg2 = args[1][1] - '0';
+void cmpFunc(int* PC, int args[]) {
+	int reg1 = args[0];
+	int reg2 = args[1];
 	if (registers[reg1] == registers[reg2])
 		registers[0] = 0;
 	else if (registers[reg1] > registers[reg2])
@@ -47,9 +43,9 @@ void cmpFunc(int* PC, int argCount, char* args[]) {
 struct Instruction cmp = {"cmp", 2, (int[]){0, 0}, (void*)cmpFunc};
 
 // -----------------ADD-----------------
-void addFunc(int* PC, int argCount, char* args[]) {
-	int reg1 = args[0][1] - '0';
-	int reg2 = args[1][1] - '0';
+void addFunc(int* PC, int args[]) {
+	int reg1 = args[0];
+	int reg2 = args[1];
 	int sum = registers[reg1] + registers[reg2];
 	// Check if the register overflows
 	if (sum > MAX_NUMBER_SIZE || sum < -MAX_NUMBER_SIZE) {
@@ -63,8 +59,8 @@ void addFunc(int* PC, int argCount, char* args[]) {
 struct Instruction add = {"add", 2, (int[]){0, 0}, (void*)addFunc};
 
 // -----------------OUT-----------------
-void outFunc(int* PC, int argCount, char* args[]) {
-	int reg = args[0][1] - '0';
+void outFunc(int* PC, int args[]) {
+	int reg = args[0];
 	char out[10];
 	sprintf(out, "%d", registers[reg]);
 	addToOutput(out);
@@ -72,12 +68,12 @@ void outFunc(int* PC, int argCount, char* args[]) {
 struct Instruction out = {"out", 1, (int[]){0}, (void*)outFunc};
 
 // -----------------OUTN----------------
-void outnFunc(int* PC, int argCount, char* args[]) { addToOutput("\n"); }
+void outnFunc(int* PC, int args[]) { addToOutput("\n"); }
 struct Instruction outn = {"outn", 0, (int[]){}, (void*)outnFunc};
 
 // -----------------IN-----------------
-void inFunc(int* PC, int argCount, char* args[]) {
-	int reg = args[0][1] - '0';
+void inFunc(int* PC, int args[]) {
+	int reg = args[0];
 	scanf("%d", &registers[reg]);
 }
 struct Instruction in = {"in", 1, (int[]){0}, (void*)inFunc};

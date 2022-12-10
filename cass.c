@@ -220,9 +220,9 @@ int processInstruction(int lineNum) {
 				   argTypeMap[inst->argTypes[j]], argTypeMap[argTypes[j]], j + 1);
 			errorDetected = 1;
 		}
-		if (errorDetected) break;
-		// Run the instruction
 		foundInstruction = 1;
+		if (errorDetected) break;
+
 		// Add to program
 		program.instructions = realloc(program.instructions, sizeof(struct ProgramInstruction) * (program.length + 1));
 		struct ProgramInstruction* progInst = malloc(sizeof(struct ProgramInstruction));
@@ -312,10 +312,8 @@ void printDebug(int PC) {
 
 // Get arguments from main
 int main(int argc, char* argv[]) {
-	argc = 3;
-	argv[1] = "./tests/test.asm";
 	// Check if --debug is passed
-	int debug = 1;
+	int debug = 0;
 	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
 
 	// The first argument is the filename

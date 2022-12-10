@@ -319,7 +319,7 @@ void printDebug(int PC) {
 		char* line = malloc(sizeof(char) * strlen(data.data[i]));
 		strcpy(line, data.data[i]);
 		line = trimStr(line);
-		line[strlen(line) - 1] = '\0';
+		line[strlen(line)] = '\0';
 
 		// If we are at the PC, print a '>' before the line
 		if (i == PC)

@@ -78,8 +78,14 @@ void inFunc(int* PC, int args[]) {
 }
 struct Instruction in = {"in", 1, (int[]){0}, (void*)inFunc};
 
+// -----------------RAND-----------------
+void randFunc(int* PC, int args[]) {
+	srand(time(NULL));
+	int reg = args[0];
+	registers[reg] = rand() % 100;
+}
+struct Instruction randInst = {"rand", 1, (int[]){0}, (void*)randFunc};
+
 #define MAX_INSTRUCTION_LENGTH 5
-#define INSTRUCTION_COUNT 9
-void* instructions[INSTRUCTION_COUNT] = {
-	&mov, &movc, &jmp, &jc, &cmp, &add, &out, &outn, &in,
-};
+#define INSTRUCTION_COUNT 10
+void* instructions[INSTRUCTION_COUNT] = {&mov, &movc, &jmp, &jc, &cmp, &add, &out, &outn, &in, &randInst};

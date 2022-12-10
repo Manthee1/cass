@@ -74,3 +74,20 @@ void printLine(int lineNum) {
 	char* line = data.data[lineNum];
 	printf(MAGENTA "\t%d " RESET "| %s", getGlobalLineNum(lineNum), data.data[lineNum]);
 }
+
+int isLabel(char* str) {
+	int strLen = strlen(str);
+	if (strLen == 0) return 0;
+	if (str[strLen - 1] == ':') return 1;
+	return 0;
+}
+
+int isComment(char* str) {
+	if (str[0] == '#' || str[0] == ';') return 1;
+	return 0;
+}
+
+int isCommentOnLine(int line) {
+	if (line >= data.length) return 0;
+	return isComment(data.data[line]);
+}

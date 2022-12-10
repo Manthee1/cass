@@ -9,14 +9,9 @@ void exitMsg(char* message, int code) {
 }
 void clear() { system("clear || cls"); }
 
-char* toLowerStr(char* str) {
-	char* newStr = malloc(sizeof(char) * strlen(str));
-	for (int i = 0; i < strlen(str); i++) {
-		if (str[i] >= 'A' && str[i] <= 'Z')
-			newStr[i] = str[i] + 32;
-		else
-			newStr[i] = str[i];
-	}
+void toLowerStr(char* str) {
+	for (int i = 0; i < strlen(str); i++) str[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] + 32 : str[i];
+}
 	return newStr;
 }
 char* trimStr(char* str) {

@@ -12,8 +12,7 @@ void clear() { system("clear || cls"); }
 void toLowerStr(char* str) {
 	for (int i = 0; i < strlen(str); i++) str[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] + 32 : str[i];
 }
-	return newStr;
-}
+
 char* trimStr(char* str) {
 	int start = 0;
 	int end = strlen(str) - 1;

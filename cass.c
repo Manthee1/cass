@@ -261,53 +261,6 @@ void processProgram() {
 	}
 }
 
-/**
- * @brief Finds the labels and saves them to the labels struct
- **/
-void indexLabels() {
-	// Free labels if they already exist
-	if (labels.length > 0) {
-		for (int i = 0; i < labels.length; i++) free(labels.data[i].name);
-		free(labels.data);
-	}
-	labels.length = 0;
-
-	char* labelName = NULL;
-	for (int i = 0; i < data.length; i++) {
-		// If the last character is a colon, it's a label
-		if (data.data[i][strlen(data.data[i]) - 1] != ':') continue;
-		labelName = realloc(labelName, sizeof(char) * strlen(data.data[i]));
-		strcpy(labelName, data.data[i]);
-		labelName[strlen(labelName) - 1] = '\0';
-
-		struct Label duplicateLabel = getLabel(labelName);
-		int labelExists = duplicateLabel.lineNum;
-
-		if (labelExists != -1) {
-			printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA
-						  "line %d" RESET " - Ignoring\n" RESET,
-				   labelName, getGlobalLineNum(labelExists));
-			printLine(labelExists);
-			printf("\n");
-			continue;
-		}
-
-		// Allocate memory for the label
-		labels.data = realloc(labels.data, sizeof(struct Label) * (labels.length + 1));
-
-		// Set the label's name
-		labels.data[labels.length].name = malloc(sizeof(char) * strlen(labelName));
-		strcpy(labels.data[labels.length].name, labelName);
-
-		// Set the label's line number
-		labels.data[labels.length].lineNum = i;
-		labels.data[labels.length].PC = program.length + 1;
-
-		labels.length++;
-	}
-	free(labelName);
-}
-
 void printDebug(int PC) {
 	clear();
 	printf("   Line: %d | Compare Flag: %d\n", getGlobalLineNum(PC), compareFlag);

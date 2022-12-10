@@ -84,7 +84,7 @@ struct Label getLabel(char* label) {
 int getLabelPosition(char* label) { return getLabel(label).PC; }
 void printLine(int lineNum) {
 	char* line = data.data[lineNum];
-	printf(MAGENTA "\t%d " RESET "| %s", getGlobalLineNum(lineNum), data.data[lineNum]);
+	printf(MAGENTA "\t%d " RESET "| %s\n", getGlobalLineNum(lineNum), data.data[lineNum]);
 }
 
 int isLabel(char* str) {
@@ -102,4 +102,27 @@ int isComment(char* str) {
 int isCommentOnLine(int line) {
 	if (line >= data.length) return 0;
 	return isComment(data.data[line]);
+}
+
+// ------- ERROR HANDLING -------
+enum EXCEPTION_TYPE { ERROR, WARNING, INFO };
+
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
+	switch (type) {
+	case ERROR:
+		printf(RED "Error" RESET);
+		break;
+	case WARNING:
+		printf(YELLOW "Warning" RESET);
+		break;
+	case INFO:
+		printf(GREEN "Info" RESET);
+		break;
+	}
+	if (lineNum == -1) {
+		printf(": %s\n", message);
+		return;
+	}
+	printf(" on line " MAGENTA "%d" RESET ": %s\n", getGlobalLineNum(lineNum), message);
+	printLine(lineNum);
 }

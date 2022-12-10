@@ -7,6 +7,7 @@ void exitMsg(char* message, int code) {
 	printf("%s\n", message);
 	exit(code);
 }
+
 void clear() { system("clear || cls"); }
 
 void toLowerStr(char* str) {

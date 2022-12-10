@@ -65,7 +65,7 @@ void getSections(struct FileContents contents) {
 	data.data = &contents.data[text.length + 2];
 
 	if (data.length == -1) exitMsg(RED "Error: No .data section" RESET, 1);
-	if (data.length == 0) printf(YELLOW "Warning: .data section is empty" RESET);
+	if (data.length == 0) printException("Warning: No data in .data section", WARNING, -1);
 }
 
 int getArgType(char* arg) {
@@ -90,7 +90,7 @@ int getArgType(char* arg) {
 	return -1;
 }
 
-void processLabel(int lineNum) {
+int processLabel(int lineNum) {
 	// Get the label name
 	char* str = data.data[lineNum];
 	char* labelName = malloc(sizeof(char) * strlen(str));
@@ -103,14 +103,12 @@ void processLabel(int lineNum) {
 	int labelExists = duplicateLabel.lineNum;
 
 	if (labelExists != -1) {
-		printf(YELLOW "Warning:" RESET " Label '" YELLOW "%s" RESET "' is already defined at " MAGENTA "line %d" RESET
-					  " - Ignoring\n" RESET,
-			   labelName, getGlobalLineNum(labelExists));
+		printException(" Label '" YELLOW "%s" RESET "' is already defined", WARNING, lineNum);
 		printLine(labelExists);
 		printf("\n");
-		return;
+		return 0;
 	}
-
+	// Should I return 0 or one depending if a function succeeds or not
 	// Allocate memory for the label
 	labels.data = realloc(labels.data, sizeof(struct Label) * (labels.length + 1));
 
@@ -123,6 +121,7 @@ void processLabel(int lineNum) {
 	// program.length - 1 because when we jump to the label, PC still gets incremented in the for loop in main.
 	labels.data[labels.length].PC = program.length - 1;
 	labels.length++;
+	return 0;
 }
 
 int convertArg(char* arg, int argType) {
@@ -143,13 +142,13 @@ int convertArg(char* arg, int argType) {
 		// 	// Data pointer
 		// 	return getData(arg).lineNum;
 		default:
-			exitMsg(RED "Internal Error: Invalid argument type" RESET, 1);
+			printException(" Invalid argument type", ERROR, -1);
 		}
 	}
 	return val;
 }
 
-void processInstruction(int lineNum) {
+int processInstruction(int lineNum) {
 	char* line = data.data[lineNum];
 	int strLen = strlen(line);
 
@@ -188,6 +187,7 @@ void processInstruction(int lineNum) {
 	}
 	free(arg);
 	int foundInstruction = 0;
+	int errorDetected = 0;
 	// We loop until we find the instruction
 	for (int instructionIndex = 0; instructionIndex < INSTRUCTION_COUNT; instructionIndex++) {
 		struct Instruction* inst = (struct Instruction*)instructions[instructionIndex];
@@ -195,25 +195,32 @@ void processInstruction(int lineNum) {
 		if (strcmp(instruction, inst->name) != 0) continue;
 		// Check if the instruction is valid
 		if (argCount != inst->argCount) {
-			printf(RED "Error:" RESET " Invalid number of arguments for instruction " YELLOW "mov" RESET " at " MAGENTA
-					   "line %d" RESET "\n",
-				   getGlobalLineNum(lineNum));
-			printf("Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n", inst->argCount, argCount);
-			printLine(lineNum);
-			break;
+			// "Invalid number of arguments for instruction " YELLOW "mov\n" RESET "Expected " YELLOW "%d" RESET
+			// " argument/s, got " YELLOW "%d" RESET "\n"
+			printException("Invalid number of arguments", ERROR, lineNum);
+
+			// print '^' under the arguments
+			int instructionLen = strlen(inst->name) + 1;
+			int argLen = strlen(line) - instructionLen;
+			printf("\t    ");
+			for (int i = 0; i < instructionLen; i++) printf(" ");
+			for (int i = 0; i < argLen; i++) printf("^");
+
+			printf(" - Expected " YELLOW "%d" RESET " argument/s, got " YELLOW "%d" RESET "\n\n", inst->argCount,
+				   argCount);
+			errorDetected = 1;
 		}
 		// Check if the arguments are valid
 		for (int j = 0; j < argCount; j++) {
-			if (argTypes[j] != inst->argTypes[j]) {
-				printf(RED "Error:" RESET " Invalid argument type for instruction " YELLOW "%s" RESET " at " MAGENTA
-						   "line %d" RESET "\n",
-					   inst->name, getGlobalLineNum(lineNum));
-				printf("Expected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET "\n", argTypeMap[inst->argTypes[j]],
-					   argTypeMap[argTypes[j]]);
-				printLine(lineNum);
-				break;
-			}
+			if (argTypes[j] == inst->argTypes[j]) continue;
+			printException("Invalid argument type", ERROR, lineNum);
+			// Get to the beginning of the arguments
+
+			printf("\tExpected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET " for argument " YELLOW "%d" RESET "\n\n",
+				   argTypeMap[inst->argTypes[j]], argTypeMap[argTypes[j]], j + 1);
+			errorDetected = 1;
 		}
+		if (errorDetected) break;
 		// Run the instruction
 		foundInstruction = 1;
 		// Add to program
@@ -234,14 +241,17 @@ void processInstruction(int lineNum) {
 					  " - Ignoring\n",
 			   instruction, getGlobalLineNum(lineNum));
 		printLine(lineNum);
+		printf("\n");
 	}
 	free(instruction);
+	return errorDetected;
 }
 
 /**
  *@brief Check if there are any errors in the code
  */
 void processProgram() {
+	int success = 1;
 	// Check if there are any labels that are not defined
 	for (int i = 0; i < data.length; i++) {
 		char* line = data.data[i];
@@ -252,12 +262,16 @@ void processProgram() {
 
 		// If the line is a label, check if it already exists, if not, add it to the labels array
 		if (isLabel(line)) {
-			processLabel(i);
+			if (processLabel(i) != 0) success = 0;
 			continue;
 		}
 
 		// Otherwise the line is an instruction
-		processInstruction(i);
+		if (processInstruction(i) != 0) success = 0;
+	}
+	if (!success) {
+		printException("Errors were detected in the code and the program will not run", ERROR, -1);
+		exit(1);
 	}
 }
 

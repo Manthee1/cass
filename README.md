@@ -12,7 +12,7 @@ gcc cass.c -o cass
 ```
 There is also a --debug flag that will print out the registers and the current instruction.
 
-```bash
+
 # Creating your own instructions
 Well... open up [instructions.c](./instructions.c)   
 Instructions are defined like this:

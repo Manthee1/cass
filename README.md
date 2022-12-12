@@ -21,7 +21,7 @@ void newInstructionFunc(int* PC char* args[])
 ```
 And you also need to define the instruction info:
 ```c
-struct Instruction newInstruction = {"newInstruction", (int[]){args...}, (void*)newInstructionFunc};
+struct Instruction newInstruction = {"newInstruction", argCount, (int[]){...argType}, (void*)newInstructionFunc};
 ```
 Finally, increment `INSTRUCTION_COUNT` at the end of the file.
 and append your instruction to the `instructions` array.
@@ -31,7 +31,7 @@ and append your instruction to the `instructions` array.
 This one takes in a single argument of the type label and jumps to that label. 
 ```c
 void jmpFunc(int* PC, int args[]) { *PC = args[0]; }
-struct Instruction jmp = {"jmp", 1, (int[]){2}, (void*)jmpFunc};
+struct Instruction jmp = {"jmp", 1, (int[]){LABEL}, (void*)jmpFunc};
 ```
   
 This one takes in two arguments. The first one is the type register and the second one is the type number. It then moves the number into the register.
@@ -41,20 +41,20 @@ void movFunc(int* PC, int args[]) {
 	int reg2 = args[1];
 	registers[reg1] = registers[reg2];
 }
-struct Instruction mov = {"mov", 2, (int[]){0, 0}, (void*)movFunc};
+struct Instruction mov = {"mov", 2, (int[]){REGISTER, NUMBER}, (void*)movFunc};
 ```
 
 There are 4 types of arguments types:
-- `0` - Register
-- `1` - Number
-- `2` - Label
-- `3` - Data Pointer (not implemented yet) 
+- `0` or `REGISTER` - Register
+- `1` or `NUMBER` - Number
+- `2` or `LABEL` - Label
+- `3` or `DATA_POINTER` - Data pointer (not implemented yet)
 
 Depending on type of argument it will give you a different value.
-- `0` - Register index
-- `1` - Number
-- `2` - (Program instruction PC index) - 1 
-- `3` - Data pointer index (not implemented yet) 
+- `REGISTER` - Register index
+- `NUMBER` - Number
+- `LABEL` - (Program instruction PC index) 
+- `DATA_POINTER` - Data pointer index (not implemented yet) 
 
 That's it.
 Okay Have fun!

@@ -59,6 +59,7 @@ struct Program program = {0, NULL};
 int registers[REGISTER_COUNT] = {0};
 int compareFlag = 0;
 char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};
+enum ARG_TYPE { REGISTER, NUMBER, LABEL, DATA_POINTER, UNKNOWN };
 char** output = NULL;
 int outputLines = 0;
 void addToOutput(char* str) {

@@ -9,7 +9,7 @@ void movFunc(int* PC, int args[]) {
 	int reg2 = args[1];
 	registers[reg1] = registers[reg2];
 }
-struct Instruction mov = {"mov", 2, (int[]){0, 0}, (void*)movFunc};
+struct Instruction mov = {"mov", 2, (int[]){REGISTER, REGISTER}, (void*)movFunc};
 
 // -----------------MOVC-----------------
 void movcFunc(int* PC, int args[]) {
@@ -21,13 +21,13 @@ struct Instruction movc = {"movc", 2, (int[]){0, 1}, (void*)movcFunc};
 
 // -----------------JMP-----------------
 void jmpFunc(int* PC, int args[]) { *PC = args[0]; }
-struct Instruction jmp = {"jmp", 1, (int[]){2}, (void*)jmpFunc};
+struct Instruction jmp = {"jmp", 1, (int[]){LABEL}, (void*)jmpFunc};
 
 // -----------------JC-----------------
 void jcFunc(int* PC, int args[]) {
 	if (registers[0] == 0) *PC = args[0];
 }
-struct Instruction jc = {"jc", 1, (int[]){2}, (void*)jcFunc};
+struct Instruction jc = {"jc", 1, (int[]){LABEL}, (void*)jcFunc};
 
 // -----------------CMP-----------------
 void cmpFunc(int* PC, int args[]) {
@@ -40,7 +40,7 @@ void cmpFunc(int* PC, int args[]) {
 	else
 		registers[0] = -1;
 }
-struct Instruction cmp = {"cmp", 2, (int[]){0, 0}, (void*)cmpFunc};
+struct Instruction cmp = {"cmp", 2, (int[]){REGISTER, REGISTER}, (void*)cmpFunc};
 
 // -----------------ADD-----------------
 void addFunc(int* PC, int args[]) {
@@ -56,7 +56,7 @@ void addFunc(int* PC, int args[]) {
 	}
 	registers[reg1] = sum;
 }
-struct Instruction add = {"add", 2, (int[]){0, 0}, (void*)addFunc};
+struct Instruction add = {"add", 2, (int[]){REGISTER, REGISTER}, (void*)addFunc};
 
 // -----------------OUT-----------------
 void outFunc(int* PC, int args[]) {
@@ -65,7 +65,7 @@ void outFunc(int* PC, int args[]) {
 	sprintf(out, "%d", registers[reg]);
 	addToOutput(out);
 }
-struct Instruction out = {"out", 1, (int[]){0}, (void*)outFunc};
+struct Instruction out = {"out", 1, (int[]){REGISTER}, (void*)outFunc};
 
 // -----------------OUTN----------------
 void outnFunc(int* PC, int args[]) { addToOutput("\n"); }
@@ -76,7 +76,7 @@ void inFunc(int* PC, int args[]) {
 	int reg = args[0];
 	scanf("%d", &registers[reg]);
 }
-struct Instruction in = {"in", 1, (int[]){0}, (void*)inFunc};
+struct Instruction in = {"in", 1, (int[]){REGISTER}, (void*)inFunc};
 
 // -----------------RAND-----------------
 void randFunc(int* PC, int args[]) {
@@ -84,7 +84,7 @@ void randFunc(int* PC, int args[]) {
 	int reg = args[0];
 	registers[reg] = rand() % 100;
 }
-struct Instruction randInst = {"rand", 1, (int[]){0}, (void*)randFunc};
+struct Instruction randInst = {"rand", 1, (int[]){REGISTER}, (void*)randFunc};
 
 #define MAX_INSTRUCTION_LENGTH 5
 #define INSTRUCTION_COUNT 10

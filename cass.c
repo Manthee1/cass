@@ -72,22 +72,22 @@ int getArgType(char* arg) {
 	// Check if it's a register
 	if (arg[0] == '$') {
 		int reg = atoi(&arg[1]);
-		if (reg >= 0 && reg < REGISTER_COUNT) return 0;
+		if (reg >= 0 && reg < REGISTER_COUNT) return REGISTER;
 	}
 
 	// Check if it's a number
 	if (isdigit(arg[0]) || arg[0] == '-') {
 		int num = atoi(arg);
-		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return 1;
+		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return NUMBER;
 	}
 
 	// Check if it's a label
-	if (getLabel(arg).lineNum != -1) return 2;
+	if (getLabel(arg).lineNum != -1) return LABEL;
 
 	// Check if it's a data pointer
-	if (arg[0] == '#') return 3;
+	if (arg[0] == '#') return DATA_POINTER;
 
-	return -1;
+	return UNKNOWN;
 }
 
 int processLabel(int lineNum) {
@@ -128,17 +128,17 @@ int convertArg(char* arg, int argType) {
 	int val = 0;
 	switch (argType) {
 		{
-		case 0:
+		case REGISTER:
 			// Register
 			sscanf(arg, "$%d", &val);
 			break;
-		case 1:
+		case NUMBER:
 			// Number
 			return atoi(arg);
-		case 2:
+		case LABEL:
 			// Label
 			return getLabel(arg).PC;
-		// case 3:
+		// case DATA_POINTER:
 		// 	// Data pointer
 		// 	return getData(arg).lineNum;
 		default:

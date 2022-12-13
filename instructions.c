@@ -67,6 +67,13 @@ void outFunc(int* PC, int args[]) {
 }
 struct Instruction out = {"out", 1, (int[]){REGISTER}, (void*)outFunc};
 
+// -----------------OUTS----------------
+void outsFunc(int* PC, int args[]) {
+	char* str = getDataStr(args[0]);
+	addToOutput(str);
+}
+struct Instruction outs = {"outs", 1, (int[]){DATA_POINTER_STR}, (void*)outsFunc};
+
 // -----------------OUTN----------------
 void outnFunc(int* PC, int args[]) { addToOutput("\n"); }
 struct Instruction outn = {"outn", 0, (int[]){}, (void*)outnFunc};
@@ -86,6 +93,15 @@ void randFunc(int* PC, int args[]) {
 }
 struct Instruction randInst = {"rand", 1, (int[]){REGISTER}, (void*)randFunc};
 
-#define MAX_INSTRUCTION_LENGTH 5
-#define INSTRUCTION_COUNT 10
-void* instructions[INSTRUCTION_COUNT] = {&mov, &movc, &jmp, &jc, &cmp, &add, &out, &outn, &in, &randInst};
+// -----------------MOVED-----------------
+void movedFunc(int* PC, int args[]) {
+	// Move data int to register
+	int reg = args[0];
+	int value = getDataInt(args[1]);
+	registers[reg] = value;
+}
+struct Instruction movedInst = {"moved", 2, (int[]){REGISTER, DATA_POINTER_INT}, (void*)movedFunc};
+
+#define INSTRUCTION_COUNT 12
+void* instructions[INSTRUCTION_COUNT] = {&mov, &movc, &jmp,	 &jc, &cmp,		 &add,
+										 &out, &outs, &outn, &in, &randInst, &movedInst};

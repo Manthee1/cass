@@ -227,7 +227,13 @@ int getArgType(char* arg) {
 	if (getLabel(arg).lineNum != -1) return LABEL;
 
 	// Check if it's a data pointer
-	if (arg[0] == '#') return DATA_POINTER;
+	if (arg[0] == '#') {
+		char* dataName = malloc(sizeof(char) * strlen(arg));
+		strcpy(dataName, &arg[1]);
+		struct Data data = getData(dataName);
+		free(dataName);
+		if (data.lineNum != -1) return data.type == TYPE_INT ? DATA_POINTER_INT : DATA_POINTER_STR;
+	}
 
 	return UNKNOWN;
 }
@@ -271,18 +277,20 @@ int convertArg(char* arg, int argType) {
 	switch (argType) {
 		{
 		case REGISTER:
-			// Register
 			sscanf(arg, "$%d", &val);
 			break;
 		case NUMBER:
-			// Number
 			return atoi(arg);
 		case LABEL:
-			// Label
 			return getLabel(arg).PC;
-		case DATA_POINTER:
-			// Data pointer
-			return getDataIndex(arg);
+		case DATA_POINTER_INT:
+		case DATA_POINTER_STR:
+			// Remove the '#' from the data name
+			char* dataName = malloc(sizeof(char) * strlen(arg));
+			strcpy(dataName, &arg[1]);
+			val = getDataIndex(dataName);
+			free(dataName);
+			break;
 		default:
 			printException("Invalid argument type", ERROR, -1);
 		}
@@ -453,10 +461,10 @@ void printDebug(int PC) {
 // Get arguments from main
 int main(int argc, char* argv[]) {
 	// Check if --debug is passed
-	argc = 2;
+	argc = 3;
 	argv[1] = "./tests/test.asm";
 
-	int debug = 0;
+	int debug = 1;
 	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
 
 	// The first argument is the filename

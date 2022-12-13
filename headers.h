@@ -73,8 +73,8 @@ struct Program program = {0, NULL};
 
 int registers[REGISTER_COUNT] = {0};
 int compareFlag = 0;
-char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer", "Unknown"};
-enum ARG_TYPE { REGISTER, NUMBER, LABEL, DATA_POINTER, UNKNOWN };
+char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer (Int)", "Data Pointer (Str)"};
+enum ARG_TYPE { REGISTER, NUMBER, LABEL, DATA_POINTER_INT, DATA_POINTER_STR, UNKNOWN };
 char** output = NULL;
 int outputLines = 0;
 void addToOutput(char* str) {
@@ -96,6 +96,18 @@ struct Data getData(char* name) {
 	int index = getDataIndex(name);
 	if (index == -1) return (struct Data){-1, NULL, -1, NULL};
 	return dataList.data[index];
+}
+
+int getDataInt(int index) {
+	if (index == -1) return 0;
+	if (dataList.data[index].type == TYPE_INT) return *(int*)dataList.data[index].value;
+	return 0;
+}
+
+char* getDataStr(int index) {
+	if (index == -1) return "";
+	if (dataList.data[index].type == TYPE_STR) return (char*)dataList.data[index].value;
+	return "";
 }
 
 struct Label getLabel(char* label) {

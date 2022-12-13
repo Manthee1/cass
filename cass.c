@@ -1,6 +1,5 @@
 #include "./instructions.c"
 
-// TODO: Parse the data and save it into a struct (name, type, value, size)
 /**
  *@brief Initializes file contents into a memory buffer
  *
@@ -45,28 +44,49 @@ struct FileContents fileToArr(FILE* file) {
  * @param contents
  */
 void getSections(struct FileContents contents) {
-	data.length = code.length = -1;
+	dataContents.length = codeContents.length = -1;
 	// Find the first line that whit .data
 	int i = 0;
 	while (i < contents.length) {
 		char* contentDataI = contents.data[i];
 		if (strstr(contents.data[i], ".code") != NULL) {
-			data.length = i;
-			code.length = contents.length - i - 1;
+			dataContents.length = i;
+			codeContents.length = contents.length - i - 1;
 			break;
 		}
 		i++;
 	}
 
-	data.data = &contents.data[1];
-	data.length--;
+	dataContents.data = &contents.data[1];
+	dataContents.length--;
 
 	// Set code.data to the contents.data text.length + 1 index
-	code.data = &contents.data[data.length + 2];
+	codeContents.data = &contents.data[dataContents.length + 2];
 
-	if (data.length == 0) printException("No data in .data section", WARNING, -1);
-	if (code.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
-	if (code.length == 0) printException("No instructions in .code section", WARNING, -1);
+	if (dataContents.length == 0) printException("No data in .data section", WARNING, -1);
+	if (codeContents.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
+	if (codeContents.length == 0) printException("No instructions in .code section", WARNING, -1);
+}
+
+void processData() {
+	for (int i = 0; i < dataContents.length; i++) {
+		// If the line is empty, skip it
+		if (dataContents.data[i][0] == '\0') continue;
+
+		// Get the line and its length
+		char* line = dataContents.data[i];
+		int strLen = strlen(line);
+
+		// Get the first 3 chars of the line (the data type)
+		char* dataType = malloc(sizeof(char) * 4);
+		strncpy(dataType, line, 3);
+		dataType[3] = '\0';
+
+		// Get the data name
+		char* dataName = malloc(sizeof(char) * strLen);
+		sscanf(line, "%*s %s", dataName);
+		printf("Data name: %s\n", dataName);
+	}
 }
 
 int getArgType(char* arg) {
@@ -93,7 +113,7 @@ int getArgType(char* arg) {
 
 int processLabel(int lineNum) {
 	// Get the label name
-	char* str = code.data[lineNum];
+	char* str = codeContents.data[lineNum];
 	char* labelName = malloc(sizeof(char) * strlen(str));
 	strcpy(labelName, str);
 	int strLen = strlen(labelName);
@@ -150,7 +170,7 @@ int convertArg(char* arg, int argType) {
 }
 
 int processInstruction(int lineNum) {
-	char* line = code.data[lineNum];
+	char* line = codeContents.data[lineNum];
 	int strLen = strlen(line);
 
 	// Get the instruction name and lowercase it
@@ -254,8 +274,8 @@ int processInstruction(int lineNum) {
 void processProgram() {
 	int success = 1;
 	// Check if there are any labels that are not defined
-	for (int i = 0; i < code.length; i++) {
-		char* line = code.data[i];
+	for (int i = 0; i < codeContents.length; i++) {
+		char* line = codeContents.data[i];
 		if (line[0] == '\n' || line[0] == '\0') continue;
 
 		// If the line is a comment, skip it
@@ -280,12 +300,12 @@ void printDebug(int PC) {
 	clear();
 	printf("   Line: %d | Compare Flag: %d\n", getGlobalLineNum(PC), compareFlag);
 
-	for (int i = 0; i < code.length; i++) {
-		if (i < 0 || i >= code.length) continue;
+	for (int i = 0; i < codeContents.length; i++) {
+		if (i < 0 || i >= codeContents.length) continue;
 
 		// Line without \n at the end
-		char* line = malloc(sizeof(char) * strlen(code.data[i]));
-		strcpy(line, code.data[i]);
+		char* line = malloc(sizeof(char) * strlen(codeContents.data[i]));
+		strcpy(line, codeContents.data[i]);
 		line = trimStr(line);
 		line[strlen(line)] = '\0';
 
@@ -314,6 +334,9 @@ void printDebug(int PC) {
 // Get arguments from main
 int main(int argc, char* argv[]) {
 	// Check if --debug is passed
+	argc = 2;
+	argv[1] = "./tests/test.asm";
+
 	int debug = 0;
 	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
 
@@ -334,6 +357,7 @@ int main(int argc, char* argv[]) {
 	struct FileContents contents = fileToArr(file);
 	// Find the sections
 	getSections(contents);
+	processData();
 	processProgram();
 	// Index labels
 	// indexLabels();

@@ -37,10 +37,23 @@ struct Instruction {
 	void (*func)(int*, ...);
 };
 
+enum DATA_TYPE { TYPE_NUMBER, TYPE_STRING };
+struct Data {
+	char* name;
+	enum DATA_TYPE type;
+	void* value;  // Pointer to the value
+};
+
+struct DataList {
+	int length;
+	struct Data* data;
+};
+
 struct ProgramInstruction {
 	int lineNum;
 	int* args;
 	int instructionIndex;  // A pointer would take up double the space. so we use an index instead
+	int dataIndex;
 };
 
 struct Program {
@@ -48,9 +61,10 @@ struct Program {
 	struct ProgramInstruction* instructions;
 };
 
-struct FileContents data = {0, NULL};
-struct FileContents code = {0, NULL};
+struct FileContents dataContents = {0, NULL};
+struct FileContents codeContents = {0, NULL};
 struct Labels labels = {0, NULL};
+struct DataList dataList = {0, NULL};
 struct Program program = {0, NULL};
 #define REGISTER_COUNT 16
 #define REGISTER_SIZE 32
@@ -69,23 +83,31 @@ void addToOutput(char* str) {
 	strcpy(output[outputLines - 1], str);
 }
 
-int getGlobalLineNum(int line) { return line + data.length + 3; }
-int isLabelOnLine(int line) {
-	for (int i = 0; i < labels.length; i++)
-		if (labels.data[i].lineNum == line) return 1;
+int getGlobalLineNum(int line) { return line + dataContents.length + 3; }
 
-	return 0;
+struct Data getData(char* name) {
+	if (dataList.data == NULL || dataList.length == 0) return (struct Data){NULL, 0, NULL};
+	for (int i = 0; i < dataList.length; i++)
+		if (strcmp(dataList.data[i].name, name) == 0) return dataList.data[i];
+	return (struct Data){NULL, 0, NULL};
 }
+
 struct Label getLabel(char* label) {
 	if (labels.data == NULL || labels.length == 0) return (struct Label){-1, -1, NULL};
 	for (int i = 0; i < labels.length; i++)
 		if (strcmp(labels.data[i].name, label) == 0) return labels.data[i];
 	return (struct Label){-1, -1, NULL};
 }
+int isLabelOnLine(int line) {
+	for (int i = 0; i < labels.length; i++)
+		if (labels.data[i].lineNum == line) return 1;
+
+	return 0;
+}
 int getLabelPosition(char* label) { return getLabel(label).PC; }
 void printLine(int lineNum) {
-	char* line = code.data[lineNum];
-	printf(MAGENTA "\t%d " RESET "| %s\n", getGlobalLineNum(lineNum), code.data[lineNum]);
+	char* line = codeContents.data[lineNum];
+	printf(MAGENTA "\t%d " RESET "| %s\n", getGlobalLineNum(lineNum), codeContents.data[lineNum]);
 }
 
 int isLabel(char* str) {
@@ -101,8 +123,8 @@ int isComment(char* str) {
 }
 
 int isCommentOnLine(int line) {
-	if (line >= code.length) return 0;
-	return isComment(code.data[line]);
+	if (line >= codeContents.length) return 0;
+	return isComment(codeContents.data[line]);
 }
 
 // ------- ERROR HANDLING -------

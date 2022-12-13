@@ -68,8 +68,59 @@ void getSections(struct FileContents contents) {
 	if (codeContents.length == 0) printException("No instructions in .code section", WARNING, -1);
 }
 
-void processData() {
+int processDataString(char* line, int lineNum, void** value) {
+	int isValid = 1;
+	// Make sure there are two quotes "
+	int strLen = strlen(line);
+
+	char* dataValue = malloc(sizeof(char) * strLen);
+	sscanf(line, "%*s %*s %[^\n\r]", dataValue);
+
+	int quoteCount = 0;
+	int firstQuote = -1;
+	int lastQuote = -1;
+	for (int i = 0; i < strLen; i++) {
+		if (dataValue[i] == '"' && (i == 0 || dataValue[i - 1] != '\\')) {
+			quoteCount++;
+			if (firstQuote == -1) {
+				firstQuote = i;
+				continue;
+			}
+			lastQuote = i;
+		};
+	}
+	if (quoteCount < 2) {
+		printException("Invalid string", ERROR, lineNum);
+		printf("String must be surrounded by quotes (\").\n");
+		free(dataValue);
+		return 1;
+	}
+	if (quoteCount > 2) {
+		printException("Invalid string", ERROR, lineNum);
+		printf("String must only contain one set of quotes (" YELLOW "\"STRING\"" RESET ").\n");
+		printf("Make sure you escape other quotes with a backslash (" YELLOW "\\\"" RESET ").\n");
+		free(dataValue);
+		return 1;
+	}
+	// Check if there is nothing else after the last quote
+	if (quoteCount == 2 && line[strLen - 1] != '"')
+		printException("Found extra characters after string (Ignoring)", WARNING, lineNum);
+
+	// Remove the quotes with strncpy
+	strncpy(dataValue, dataValue + 1, lastQuote - 1);
+	dataValue[lastQuote - 1] = '\0';
+	dataValue = realloc(dataValue, sizeof(char) * (strlen(dataValue) + 1));
+	*value = dataValue;
+
+	return !isValid;
+}
+
+int processData() {
+	int success = 1;
+	dataList.data = malloc(sizeof(struct Data) * dataContents.length);
 	for (int i = 0; i < dataContents.length; i++) {
+		int isValid = 1;
+
 		// If the line is empty, skip it
 		if (dataContents.data[i][0] == '\0') continue;
 
@@ -78,15 +129,85 @@ void processData() {
 		int strLen = strlen(line);
 
 		// Get the first 3 chars of the line (the data type)
-		char* dataType = malloc(sizeof(char) * 4);
-		strncpy(dataType, line, 3);
-		dataType[3] = '\0';
+		char* dataTypeName = malloc(sizeof(char) * 4);
+		strncpy(dataTypeName, line, 3);
+		dataTypeName[3] = '\0';
+
+		// Check if the data type is valid
+		if (strcmp(dataTypeName, "int") != 0 && strcmp(dataTypeName, "str") != 0) {
+			isValid = 0;
+			printException("Invalid data type", ERROR, i);
+		}
+		int dataType = strcmp(dataTypeName, "int") == 0 ? TYPE_INT : TYPE_STR;
 
 		// Get the data name
 		char* dataName = malloc(sizeof(char) * strLen);
 		sscanf(line, "%*s %s", dataName);
-		printf("Data name: %s\n", dataName);
+		// Reallocate the data name to the correct size
+		dataName = realloc(dataName, sizeof(char) * (strlen(dataName) + 1));
+
+		// Check if the data name is already defined
+		struct Data duplicateData = getData(dataName);
+		if (duplicateData.lineNum != -1) {
+			isValid = 0;
+			printException("Variable name already defined", ERROR, i);
+			printLine(duplicateData.lineNum);
+			printf("\n");
+		}
+
+		// Check if the data name is a valid variable name
+		// Make sure it starts with a letter, and only contains letters, numbers, '_' and '-'
+		int isValidName = 1;
+		if (!isalpha(dataName[0])) isValidName = 0;
+		if (isValidName)
+			for (int j = 1; j < strlen(dataName); j++) {
+				if (isalnum(dataName[j]) || dataName[j] == '_' || dataName[j] == '-') continue;
+				isValidName = 0;
+				break;
+			}
+		if (!isValidName) {
+			isValid = 0;
+			printException("Invalid variable name", ERROR, i);
+			printf("Variable name must start with a letter, and only contain letters, numbers, '_' or '-'.\n");
+		}
+
+		void* dataValuePointer = NULL;
+		// Check if dataValue will be empty
+		char* dataValue = malloc(sizeof(char) * strLen);
+		sscanf(line, "%*s %*s %[^\n\r]", dataValue);
+		if (dataValue[0] == '\0') {
+			isValid = 0;
+			printException("No value specified", ERROR, i);
+		} else if (dataType == TYPE_INT) {
+			// Get the data value
+			int dataValueInt;
+			sscanf(line, "%*s %*s %d", &dataValueInt);
+			dataValuePointer = malloc(sizeof(int));
+			*(int*)dataValuePointer = dataValueInt;
+		} else if (processDataString(line, i, &dataValuePointer))
+			isValid = 0;
+
+		// If the variable is not valid, skip it
+		if (!isValid) {
+			success = 0;
+			continue;
+		}
+
+		// Add the data to the data array
+		struct Data data;
+		data.lineNum = i;
+		data.name = dataName;
+		data.type = dataType;
+		data.value = dataValuePointer;
+
+		// Add the data to the data list
+		dataList.data[dataList.length] = data;
+		dataList.length++;
 	}
+	// Reallocate the data list to the correct size
+	dataList.data = realloc(dataList.data, sizeof(struct Data) * dataList.length);
+
+	return !success;
 }
 
 int getArgType(char* arg) {
@@ -270,8 +391,9 @@ int processInstruction(int lineNum) {
 
 /**
  *@brief Check if there are any errors in the code
+ *@return 0 if there are no errors, 1 if there are errors
  */
-void processProgram() {
+int processProgram() {
 	int success = 1;
 	// Check if there are any labels that are not defined
 	for (int i = 0; i < codeContents.length; i++) {
@@ -290,10 +412,7 @@ void processProgram() {
 		// Otherwise the line is an instruction
 		if (processInstruction(i) != 0) success = 0;
 	}
-	if (!success) {
-		printException("Errors were detected in the code and the program will not run", ERROR, -1);
-		exit(1);
-	}
+	return !success;
 }
 
 void printDebug(int PC) {
@@ -357,10 +476,13 @@ int main(int argc, char* argv[]) {
 	struct FileContents contents = fileToArr(file);
 	// Find the sections
 	getSections(contents);
-	processData();
-	processProgram();
-	// Index labels
-	// indexLabels();
+
+	// Process the data and program sections
+	// if either of them return 1, error detected
+	if (processData() || processProgram()) {
+		printException("Errors were detected in the code and the program will not run", ERROR, -1);
+		exit(1);
+	}
 
 	int lastOutputLine = 0;
 	for (int PC = 0; PC < program.length; PC++) {

@@ -37,8 +37,9 @@ struct Instruction {
 	void (*func)(int*, ...);
 };
 
-enum DATA_TYPE { TYPE_NUMBER, TYPE_STRING };
+enum DATA_TYPE { TYPE_INT, TYPE_STR };
 struct Data {
+	int lineNum;
 	char* name;
 	enum DATA_TYPE type;
 	void* value;  // Pointer to the value
@@ -86,10 +87,10 @@ void addToOutput(char* str) {
 int getGlobalLineNum(int line) { return line + dataContents.length + 3; }
 
 struct Data getData(char* name) {
-	if (dataList.data == NULL || dataList.length == 0) return (struct Data){NULL, 0, NULL};
+	if (dataList.data == NULL || dataList.length == 0) return (struct Data){-1, NULL, -1, NULL};
 	for (int i = 0; i < dataList.length; i++)
 		if (strcmp(dataList.data[i].name, name) == 0) return dataList.data[i];
-	return (struct Data){NULL, 0, NULL};
+	return (struct Data){-1, NULL, -1, NULL};
 }
 
 struct Label getLabel(char* label) {

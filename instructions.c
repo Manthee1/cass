@@ -17,7 +17,7 @@ void movcFunc(int* PC, int args[]) {
 	int value = args[1];
 	registers[reg] = value;
 }
-struct Instruction movc = {"movc", 2, (int[]){0, 1}, (void*)movcFunc};
+struct Instruction movc = {"movc", 2, (int[]){REGISTER, NUMBER}, (void*)movcFunc};
 
 // -----------------JMP-----------------
 void jmpFunc(int* PC, int args[]) { *PC = args[0]; }

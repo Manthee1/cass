@@ -1,4 +1,4 @@
-.data
+.code
 start:
 movc $1, 0
 movc $2, 1

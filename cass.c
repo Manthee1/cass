@@ -41,31 +41,32 @@ struct FileContents fileToArr(FILE* file) {
 }
 
 /**
- * @brief FInd the start of .TEXT and .DATA sections and save that info to data and text variables
+ * @brief Find the start of .CODE and .DATA sections and save that info to code and data variables
  * @param contents
  */
 void getSections(struct FileContents contents) {
-	text.length = data.length = -1;
+	data.length = code.length = -1;
 	// Find the first line that whit .data
 	int i = 0;
 	while (i < contents.length) {
 		char* contentDataI = contents.data[i];
-		if (strstr(contents.data[i], ".data") != NULL) {
-			text.length = i;
-			data.length = contents.length - i - 1;
+		if (strstr(contents.data[i], ".code") != NULL) {
+			data.length = i;
+			code.length = contents.length - i - 1;
 			break;
 		}
 		i++;
 	}
 
-	text.data = &contents.data[1];
-	text.length--;
+	data.data = &contents.data[1];
+	data.length--;
 
-	// Set data.data to the contents.data text.length + 1 index
-	data.data = &contents.data[text.length + 2];
+	// Set code.data to the contents.data text.length + 1 index
+	code.data = &contents.data[data.length + 2];
 
-	if (data.length == -1) exitMsg(RED "Error: No .data section" RESET, 1);
-	if (data.length == 0) printException("Warning: No data in .data section", WARNING, -1);
+	if (data.length == 0) printException("No data in .data section", WARNING, -1);
+	if (code.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
+	if (code.length == 0) printException("No instructions in .code section", WARNING, -1);
 }
 
 int getArgType(char* arg) {
@@ -92,7 +93,7 @@ int getArgType(char* arg) {
 
 int processLabel(int lineNum) {
 	// Get the label name
-	char* str = data.data[lineNum];
+	char* str = code.data[lineNum];
 	char* labelName = malloc(sizeof(char) * strlen(str));
 	strcpy(labelName, str);
 	int strLen = strlen(labelName);
@@ -149,7 +150,7 @@ int convertArg(char* arg, int argType) {
 }
 
 int processInstruction(int lineNum) {
-	char* line = data.data[lineNum];
+	char* line = code.data[lineNum];
 	int strLen = strlen(line);
 
 	// Get the instruction name and lowercase it
@@ -253,8 +254,8 @@ int processInstruction(int lineNum) {
 void processProgram() {
 	int success = 1;
 	// Check if there are any labels that are not defined
-	for (int i = 0; i < data.length; i++) {
-		char* line = data.data[i];
+	for (int i = 0; i < code.length; i++) {
+		char* line = code.data[i];
 		if (line[0] == '\n' || line[0] == '\0') continue;
 
 		// If the line is a comment, skip it
@@ -279,12 +280,12 @@ void printDebug(int PC) {
 	clear();
 	printf("   Line: %d | Compare Flag: %d\n", getGlobalLineNum(PC), compareFlag);
 
-	for (int i = 0; i < data.length; i++) {
-		if (i < 0 || i >= data.length) continue;
+	for (int i = 0; i < code.length; i++) {
+		if (i < 0 || i >= code.length) continue;
 
 		// Line without \n at the end
-		char* line = malloc(sizeof(char) * strlen(data.data[i]));
-		strcpy(line, data.data[i]);
+		char* line = malloc(sizeof(char) * strlen(code.data[i]));
+		strcpy(line, code.data[i]);
 		line = trimStr(line);
 		line[strlen(line)] = '\0';
 

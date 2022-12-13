@@ -48,8 +48,8 @@ struct Program {
 	struct ProgramInstruction* instructions;
 };
 
-struct FileContents text = {0, NULL};
 struct FileContents data = {0, NULL};
+struct FileContents code = {0, NULL};
 struct Labels labels = {0, NULL};
 struct Program program = {0, NULL};
 #define REGISTER_COUNT 16
@@ -69,7 +69,7 @@ void addToOutput(char* str) {
 	strcpy(output[outputLines - 1], str);
 }
 
-int getGlobalLineNum(int line) { return line + text.length + 3; }
+int getGlobalLineNum(int line) { return line + data.length + 3; }
 int isLabelOnLine(int line) {
 	for (int i = 0; i < labels.length; i++)
 		if (labels.data[i].lineNum == line) return 1;
@@ -84,8 +84,8 @@ struct Label getLabel(char* label) {
 }
 int getLabelPosition(char* label) { return getLabel(label).PC; }
 void printLine(int lineNum) {
-	char* line = data.data[lineNum];
-	printf(MAGENTA "\t%d " RESET "| %s\n", getGlobalLineNum(lineNum), data.data[lineNum]);
+	char* line = code.data[lineNum];
+	printf(MAGENTA "\t%d " RESET "| %s\n", getGlobalLineNum(lineNum), code.data[lineNum]);
 }
 
 int isLabel(char* str) {
@@ -101,8 +101,8 @@ int isComment(char* str) {
 }
 
 int isCommentOnLine(int line) {
-	if (line >= data.length) return 0;
-	return isComment(data.data[line]);
+	if (line >= code.length) return 0;
+	return isComment(code.data[line]);
 }
 
 // ------- ERROR HANDLING -------

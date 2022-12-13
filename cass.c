@@ -280,11 +280,11 @@ int convertArg(char* arg, int argType) {
 		case LABEL:
 			// Label
 			return getLabel(arg).PC;
-		// case DATA_POINTER:
-		// 	// Data pointer
-		// 	return getData(arg).lineNum;
+		case DATA_POINTER:
+			// Data pointer
+			return getDataIndex(arg);
 		default:
-			printException(" Invalid argument type", ERROR, -1);
+			printException("Invalid argument type", ERROR, -1);
 		}
 	}
 	return val;

@@ -86,11 +86,16 @@ void addToOutput(char* str) {
 
 int getGlobalLineNum(int line) { return line + dataContents.length + 3; }
 
-struct Data getData(char* name) {
-	if (dataList.data == NULL || dataList.length == 0) return (struct Data){-1, NULL, -1, NULL};
+int getDataIndex(char* name) {
+	if (dataList.data == NULL || dataList.length == 0) return -1;
 	for (int i = 0; i < dataList.length; i++)
-		if (strcmp(dataList.data[i].name, name) == 0) return dataList.data[i];
-	return (struct Data){-1, NULL, -1, NULL};
+		if (strcmp(dataList.data[i].name, name) == 0) return i;
+	return -1;
+}
+struct Data getData(char* name) {
+	int index = getDataIndex(name);
+	if (index == -1) return (struct Data){-1, NULL, -1, NULL};
+	return dataList.data[index];
 }
 
 struct Label getLabel(char* label) {

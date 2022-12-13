@@ -1,5 +1,11 @@
 #include "./instructions.c"
 
+// TODO: Improve error handling (correct data int, variable exists, etc)
+// TODO: change codeContents and dataContents to be a line index instead of a pointer to the line
+// TODO: Add runtime error handling (check if registers are valid, etc)
+// TODO: Maybe split up the file into multiple files
+// TODO: Add more comments and clean up code
+
 /**
  *@brief Initializes file contents into a memory buffer
  *
@@ -461,10 +467,7 @@ void printDebug(int PC) {
 // Get arguments from main
 int main(int argc, char* argv[]) {
 	// Check if --debug is passed
-	argc = 3;
-	argv[1] = "./tests/test.asm";
-
-	int debug = 1;
+	int debug = 0;
 	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
 
 	// The first argument is the filename

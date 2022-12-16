@@ -63,7 +63,7 @@ struct Instruction add = {"add", 2, (int[]){REGISTER, REGISTER}, (void*)addFunc}
 // -----------------OUT-----------------
 void outFunc(int* PC, int args[]) {
 	int reg = args[0];
-	char out[10];
+	char* out = malloc(10 * sizeof(char));
 	sprintf(out, "%d", registers[reg]);
 	pushString(&output, out);
 }

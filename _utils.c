@@ -128,4 +128,28 @@ int wrap(int num, int min, int max) {
 	return num;
 }
 
+void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum + 1, contents.data[lineNum]); }
+
+// ------- ERROR HANDLING -------
+
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
+	switch (type) {
+	case ERROR:
+		printf(RED "Error" RESET);
+		break;
+	case WARNING:
+		printf(YELLOW "Warning" RESET);
+		break;
+	case INFO:
+		printf(GREEN "Info" RESET);
+		break;
+	}
+	if (lineNum == -1) {
+		printf(": %s\n", message);
+		return;
+	}
+	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum + 1, message);
+	printLine(lineNum);
+}
+
 #endif

@@ -3,35 +3,10 @@
 #include "_utils.c"
 #include "instructions.c"
 
-// TODO: Improve error handling (correct data int, variable exists, etc)
 // TODO: change codeContents and dataContents to be a line index instead of a pointer to the line
 // TODO: Add runtime error handling (check if registers are valid, etc)
 // TODO: Maybe split up the file into multiple files
 // TODO: Add more comments and clean up code
-
-void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum + 1, contents.data[lineNum]); }
-// ------- ERROR HANDLING -------
-enum EXCEPTION_TYPE { ERROR, WARNING, INFO };
-
-void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
-	switch (type) {
-	case ERROR:
-		printf(RED "Error" RESET);
-		break;
-	case WARNING:
-		printf(YELLOW "Warning" RESET);
-		break;
-	case INFO:
-		printf(GREEN "Info" RESET);
-		break;
-	}
-	if (lineNum == -1) {
-		printf(": %s\n", message);
-		return;
-	}
-	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum + 1, message);
-	printLine(lineNum);
-}
 
 /**
  *@brief Initializes file contents into a memory buffer
@@ -454,7 +429,7 @@ void printDebug(int PC) {
 	clear();
 	printf("   Line: %d | Compare Flag: %d\n", PC, compareFlag);
 
-	for (int i = codeSection.start; i < codeSection.end; i++) {
+	for (int i = codeSection.start + 1; i < codeSection.end; i++) {
 		// if (i < codeSection.start || i >= codeSection.end) continue;
 
 		// Line without \n at the end
@@ -464,7 +439,7 @@ void printDebug(int PC) {
 		line[strlen(line)] = '\0';
 
 		// If we are at the PC, print a '>' before the line
-		if (i - codeSection.start == PC)
+		if (i == PC)
 			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, i, line);
 		else
 			printf(MAGENTA "  %3d " RESET "| %s", i, line);

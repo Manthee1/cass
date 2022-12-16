@@ -71,6 +71,8 @@ struct Program {
 	struct ProgramInstruction* instructions;
 };
 
+enum EXCEPTION_TYPE { ERROR, WARNING, INFO };
+
 #define REGISTER_COUNT 16
 #define REGISTER_SIZE 32
 #define MAX_NUMBER_SIZE (int)pow(2, REGISTER_SIZE)

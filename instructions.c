@@ -1,5 +1,7 @@
 
 #include "headers.h"
+#include "globals.c"
+#include "_utils.c"
 
 // ========================= INSTRUCTIONS =========================
 

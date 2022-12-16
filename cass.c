@@ -1,19 +1,13 @@
-#include "./instructions.c"
+#include "headers.h"
+#include "globals.c"
+#include "_utils.c"
+#include "instructions.c"
 
 // TODO: Improve error handling (correct data int, variable exists, etc)
 // TODO: change codeContents and dataContents to be a line index instead of a pointer to the line
 // TODO: Add runtime error handling (check if registers are valid, etc)
 // TODO: Maybe split up the file into multiple files
 // TODO: Add more comments and clean up code
-
-struct FileContents contents = {0, NULL};
-
-struct SectionIndex dataSection = {-1, -1, -1};
-struct SectionIndex codeSection = {-1, -1, -1};
-
-struct Labels labels = {0, NULL};
-struct DataList dataList = {0, NULL};
-struct Program program = {0, NULL};
 
 void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum, contents.data[lineNum]); }
 // ------- ERROR HANDLING -------

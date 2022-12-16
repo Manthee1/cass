@@ -6,6 +6,39 @@
 // TODO: Maybe split up the file into multiple files
 // TODO: Add more comments and clean up code
 
+struct FileContents contents = {0, NULL};
+
+struct SectionIndex dataSection = {-1, -1, -1};
+struct SectionIndex codeSection = {-1, -1, -1};
+
+struct Labels labels = {0, NULL};
+struct DataList dataList = {0, NULL};
+struct Program program = {0, NULL};
+
+void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum, contents.data[lineNum]); }
+// ------- ERROR HANDLING -------
+enum EXCEPTION_TYPE { ERROR, WARNING, INFO };
+
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
+	switch (type) {
+	case ERROR:
+		printf(RED "Error" RESET);
+		break;
+	case WARNING:
+		printf(YELLOW "Warning" RESET);
+		break;
+	case INFO:
+		printf(GREEN "Info" RESET);
+		break;
+	}
+	if (lineNum == -1) {
+		printf(": %s\n", message);
+		return;
+	}
+	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum, message);
+	printLine(lineNum);
+}
+
 /**
  *@brief Initializes file contents into a memory buffer
  *
@@ -45,33 +78,11 @@ struct FileContents fileToArr(FILE* file) {
 	return contents;
 }
 
-/**
- * @brief Find the start of .CODE and .DATA sections and save that info to code and data variables
- * @param contents
- */
-void getSections(struct FileContents contents) {
-	dataContents.length = codeContents.length = -1;
-	// Find the first line that whit .data
-	int i = 0;
-	while (i < contents.length) {
-		char* contentDataI = contents.data[i];
-		if (strstr(contents.data[i], ".code") != NULL) {
-			dataContents.length = i;
-			codeContents.length = contents.length - i - 1;
-			break;
-		}
-		i++;
-	}
-
-	dataContents.data = &contents.data[1];
-	dataContents.length--;
-
-	// Set code.data to the contents.data text.length + 1 index
-	codeContents.data = &contents.data[dataContents.length + 2];
-
-	if (dataContents.length == 0) printException("No data in .data section", WARNING, -1);
-	if (codeContents.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
-	if (codeContents.length == 0) printException("No instructions in .code section", WARNING, -1);
+int findCodeSection(struct FileContents contents) {
+	// Find the first line that has .code
+	for (int i = 0; i < contents.length; i++)
+		if (strstr(contents.data[i], ".code") != NULL) return i;
+	return -1;
 }
 
 int processDataString(char* line, int lineNum, void** value) {
@@ -121,17 +132,18 @@ int processDataString(char* line, int lineNum, void** value) {
 	return !isValid;
 }
 
-int processData() {
+int processData(struct FileContents contents, struct SectionIndex dataSection) {
 	int success = 1;
-	dataList.data = malloc(sizeof(struct Data) * dataContents.length);
-	for (int i = 0; i < dataContents.length; i++) {
+	dataList.data = malloc(sizeof(struct Data) * dataSection.length);
+	for (int i = 0; i < dataSection.length; i++) {
 		int isValid = 1;
 
+		char* line = contents.data[i + dataSection.start];
+
 		// If the line is empty, skip it
-		if (dataContents.data[i][0] == '\0') continue;
+		if (line[0] == '\0') continue;
 
 		// Get the line and its length
-		char* line = dataContents.data[i];
 		int strLen = strlen(line);
 
 		// Get the first 3 chars of the line (the data type)
@@ -153,7 +165,7 @@ int processData() {
 		dataName = realloc(dataName, sizeof(char) * (strlen(dataName) + 1));
 
 		// Check if the data name is already defined
-		struct Data duplicateData = getData(dataName);
+		struct Data duplicateData = getData(dataList, dataName);
 		if (duplicateData.lineNum != -1) {
 			isValid = 0;
 			printException("Variable name already defined", ERROR, i);
@@ -230,13 +242,13 @@ int getArgType(char* arg) {
 	}
 
 	// Check if it's a label
-	if (getLabel(arg).lineNum != -1) return LABEL;
+	if (getLabel(labels, arg).lineNum != -1) return LABEL;
 
 	// Check if it's a data pointer
 	if (arg[0] == '#') {
 		char* dataName = malloc(sizeof(char) * strlen(arg));
 		strcpy(dataName, &arg[1]);
-		struct Data data = getData(dataName);
+		struct Data data = getData(dataList, dataName);
 		free(dataName);
 		if (data.lineNum != -1) return data.type == TYPE_INT ? DATA_POINTER_INT : DATA_POINTER_STR;
 	}
@@ -246,14 +258,14 @@ int getArgType(char* arg) {
 
 int processLabel(int lineNum) {
 	// Get the label name
-	char* str = codeContents.data[lineNum];
+	char* str = contents.data[lineNum];
 	char* labelName = malloc(sizeof(char) * strlen(str));
 	strcpy(labelName, str);
 	int strLen = strlen(labelName);
 	labelName[strLen - 1] = '\0';
 
 	// Check if the label already exists
-	struct Label duplicateLabel = getLabel(labelName);
+	struct Label duplicateLabel = getLabel(labels, labelName);
 	int labelExists = duplicateLabel.lineNum;
 
 	if (labelExists != -1) {
@@ -288,13 +300,13 @@ int convertArg(char* arg, int argType) {
 		case NUMBER:
 			return atoi(arg);
 		case LABEL:
-			return getLabel(arg).PC;
+			return getLabel(labels, arg).PC;
 		case DATA_POINTER_INT:
 		case DATA_POINTER_STR:
-			// Remove the '#' from the data name
+			val = 0;  // This is a hack to make the IDE happy
 			char* dataName = malloc(sizeof(char) * strlen(arg));
 			strcpy(dataName, &arg[1]);
-			val = getDataIndex(dataName);
+			val = getDataIndex(dataList, dataName);
 			free(dataName);
 			break;
 		default:
@@ -305,7 +317,7 @@ int convertArg(char* arg, int argType) {
 }
 
 int processInstruction(int lineNum) {
-	char* line = codeContents.data[lineNum];
+	char* line = contents.data[lineNum];
 	int strLen = strlen(line);
 
 	// Get the instruction name and lowercase it
@@ -395,7 +407,7 @@ int processInstruction(int lineNum) {
 	if (!foundInstruction) {
 		printf(YELLOW "Warning:" RESET " Unknown instruction '" YELLOW "%s" RESET "' at " MAGENTA "line %d" RESET
 					  " - Ignoring\n",
-			   instruction, getGlobalLineNum(lineNum));
+			   instruction, lineNum);
 		printLine(lineNum);
 		printf("\n");
 	}
@@ -407,11 +419,11 @@ int processInstruction(int lineNum) {
  *@brief Check if there are any errors in the code
  *@return 0 if there are no errors, 1 if there are errors
  */
-int processProgram() {
+int processProgram(struct FileContents contents, struct SectionIndex codeSection) {
 	int success = 1;
 	// Check if there are any labels that are not defined
-	for (int i = 0; i < codeContents.length; i++) {
-		char* line = codeContents.data[i];
+	for (int i = codeSection.start; i < codeSection.end; i++) {
+		char* line = contents.data[codeSection.start + i];
 		if (line[0] == '\n' || line[0] == '\0') continue;
 
 		// If the line is a comment, skip it
@@ -431,22 +443,22 @@ int processProgram() {
 
 void printDebug(int PC) {
 	clear();
-	printf("   Line: %d | Compare Flag: %d\n", getGlobalLineNum(PC), compareFlag);
+	printf("   Line: %d | Compare Flag: %d\n", PC, compareFlag);
 
-	for (int i = 0; i < codeContents.length; i++) {
-		if (i < 0 || i >= codeContents.length) continue;
+	for (int i = codeSection.start; i < codeSection.end; i++) {
+		// if (i < codeSection.start || i >= codeSection.end) continue;
 
 		// Line without \n at the end
-		char* line = malloc(sizeof(char) * strlen(codeContents.data[i]));
-		strcpy(line, codeContents.data[i]);
+		char* line = malloc(sizeof(char) * strlen(contents.data[i]));
+		strcpy(line, contents.data[i]);
 		line = trimStr(line);
 		line[strlen(line)] = '\0';
 
 		// If we are at the PC, print a '>' before the line
-		if (i == PC)
-			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, getGlobalLineNum(i), line);
+		if (i - codeSection.start == PC)
+			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, i, line);
 		else
-			printf(MAGENTA "  %3d " RESET "| %s", getGlobalLineNum(i), line);
+			printf(MAGENTA "  %3d " RESET "| %s", i, line);
 
 		// Print empty spaces after the line
 		for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
@@ -484,13 +496,38 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Read file
-	struct FileContents contents = fileToArr(file);
-	// Find the sections
-	getSections(contents);
+	contents = fileToArr(file);
+	fclose(file);
+
+	// Find the section indexes
+	for (int i = 0; i < contents.length; i++) {
+		if (strstr(contents.data[i], ".data") != NULL) dataSection.start = i;
+		if (strstr(contents.data[i], ".code") != NULL) {
+			dataSection.end = i;
+			dataSection.length = dataSection.end - dataSection.start;
+
+			codeSection.start = i;
+			codeSection.end = contents.length;
+			codeSection.length = codeSection.end - codeSection.start;
+			break;
+		}
+	}
+
+	printf("Data Section: %d - %d\n", dataSection.start, dataSection.end);
+	printf("Code Section: %d - %d\n", codeSection.start, codeSection.end);
+
+	if (dataSection.start == -1)
+		printException("No .data section", WARNING, -1);
+	else if (dataSection.length == 1)
+		printException("No data in .data section", WARNING, -1);
+	int dataExists = (dataSection.start != -1 && dataSection.length != 1);
+
+	if (codeSection.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
+	if (codeSection.length == 0) printException("No instructions in .code section", WARNING, -1);
 
 	// Process the data and program sections
 	// if either of them return 1, error detected
-	if (processData() || processProgram()) {
+	if ((dataExists && processData(contents, codeSection)) || processProgram(contents, codeSection)) {
 		printException("Errors were detected in the code and the program will not run", ERROR, -1);
 		exit(1);
 	}

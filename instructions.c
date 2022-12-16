@@ -51,7 +51,7 @@ void addFunc(int* PC, int args[]) {
 	if (sum > MAX_NUMBER_SIZE || sum < -MAX_NUMBER_SIZE) {
 		registers[reg1] = wrap(sum, MAX_NUMBER_SIZE, -MAX_NUMBER_SIZE);
 		printf(YELLOW "Warning:" RESET " Register " YELLOW "$%d" RESET " overflowed at " MAGENTA "line %d" RESET "\n\n",
-			   reg1, getGlobalLineNum(*PC));
+			   reg1, *PC);
 		return;
 	}
 	registers[reg1] = sum;
@@ -69,7 +69,7 @@ struct Instruction out = {"out", 1, (int[]){REGISTER}, (void*)outFunc};
 
 // -----------------OUTS----------------
 void outsFunc(int* PC, int args[]) {
-	char* str = getDataStr(args[0]);
+	char* str = getDataStr(dataList, args[0]);
 	addToOutput(str);
 }
 struct Instruction outs = {"outs", 1, (int[]){DATA_POINTER_STR}, (void*)outsFunc};
@@ -97,7 +97,7 @@ struct Instruction randInst = {"rand", 1, (int[]){REGISTER}, (void*)randFunc};
 void movedFunc(int* PC, int args[]) {
 	// Move data int to register
 	int reg = args[0];
-	int value = getDataInt(args[1]);
+	int value = getDataInt(dataList, args[1]);
 	registers[reg] = value;
 }
 struct Instruction movedInst = {"moved", 2, (int[]){REGISTER, DATA_POINTER_INT}, (void*)movedFunc};

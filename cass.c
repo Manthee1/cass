@@ -9,7 +9,7 @@
 // TODO: Maybe split up the file into multiple files
 // TODO: Add more comments and clean up code
 
-void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum, contents.data[lineNum]); }
+void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum + 1, contents.data[lineNum]); }
 // ------- ERROR HANDLING -------
 enum EXCEPTION_TYPE { ERROR, WARNING, INFO };
 
@@ -29,7 +29,7 @@ void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
 		printf(": %s\n", message);
 		return;
 	}
-	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum, message);
+	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum + 1, message);
 	printLine(lineNum);
 }
 
@@ -129,10 +129,10 @@ int processDataString(char* line, int lineNum, void** value) {
 int processData(struct FileContents contents, struct SectionIndex dataSection) {
 	int success = 1;
 	dataList.data = malloc(sizeof(struct Data) * dataSection.length);
-	for (int i = 0; i < dataSection.length; i++) {
+	for (int i = dataSection.start + 1; i < dataSection.end; i++) {
 		int isValid = 1;
 
-		char* line = contents.data[i + dataSection.start];
+		char* line = contents.data[i];
 
 		// If the line is empty, skip it
 		if (line[0] == '\0') continue;
@@ -298,6 +298,7 @@ int convertArg(char* arg, int argType) {
 		case DATA_POINTER_INT:
 		case DATA_POINTER_STR:
 			val = 0;  // This is a hack to make the IDE happy
+			// Get the data name
 			char* dataName = malloc(sizeof(char) * strlen(arg));
 			strcpy(dataName, &arg[1]);
 			val = getDataIndex(dataList, dataName);
@@ -338,6 +339,16 @@ int processInstruction(int lineNum) {
 			arg[argLen] = '\0';
 			argLen = 0;
 			argCount++;
+			// Check if the argument is a data pointer
+			if (arg[0] == '#') {
+				// Check if the variable exists
+				int dataVarExists = getDataIndex(dataList, &arg[1]) != -1;
+				if (!dataVarExists) {
+					printException(" Data variable undefined", ERROR, lineNum);
+					printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
+					return 1;
+				}
+			}
 			int argType = getArgType(arg);
 			args = realloc(args, sizeof(int) * argCount);
 			argTypes = realloc(argTypes, sizeof(int) * argCount);
@@ -374,6 +385,10 @@ int processInstruction(int lineNum) {
 		}
 		// Check if the arguments are valid
 		for (int j = 0; j < argCount; j++) {
+			// Check if atg type is a data pointer
+			if (argTypes[j] == DATA_POINTER_INT || argTypes[j] == DATA_POINTER_STR) {
+				getData(dataList, arg);
+			}
 			if (argTypes[j] == inst->argTypes[j]) continue;
 			printException("Invalid argument type", ERROR, lineNum);
 			// Get to the beginning of the arguments
@@ -416,8 +431,8 @@ int processInstruction(int lineNum) {
 int processProgram(struct FileContents contents, struct SectionIndex codeSection) {
 	int success = 1;
 	// Check if there are any labels that are not defined
-	for (int i = codeSection.start; i < codeSection.end; i++) {
-		char* line = contents.data[codeSection.start + i];
+	for (int i = codeSection.start + 1; i < codeSection.end; i++) {
+		char* line = contents.data[i];
 		if (line[0] == '\n' || line[0] == '\0') continue;
 
 		// If the line is a comment, skip it
@@ -521,7 +536,7 @@ int main(int argc, char* argv[]) {
 
 	// Process the data and program sections
 	// if either of them return 1, error detected
-	if ((dataExists && processData(contents, codeSection)) || processProgram(contents, codeSection)) {
+	if ((dataExists && processData(contents, dataSection)) || processProgram(contents, codeSection)) {
 		printException("Errors were detected in the code and the program will not run", ERROR, -1);
 		exit(1);
 	}

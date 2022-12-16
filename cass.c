@@ -3,9 +3,7 @@
 #include "_utils.c"
 #include "instructions.c"
 
-// TODO: change codeContents and dataContents to be a line index instead of a pointer to the line
 // TODO: Add runtime error handling (check if registers are valid, etc)
-// TODO: Maybe split up the file into multiple files
 // TODO: Add more comments and clean up code
 
 /**
@@ -24,8 +22,8 @@ struct FileContents fileToArr(FILE* file) {
 	contents.length = 0;
 
 	// Allocate enough memory for the buffer
-	contents.data = malloc(sizeof(char*) * fileLenLines);
-	char* lines = malloc(sizeof(char) * fileLen + 1);
+	contents.data = calloc(fileLenLines, sizeof(char*));
+	char* lines = calloc(fileLen + 1, sizeof(char));
 	// Place 'E' at the end of the buffer
 	lines[fileLen] = 'E';
 
@@ -47,24 +45,30 @@ struct FileContents fileToArr(FILE* file) {
 	return contents;
 }
 
-int findCodeSection(struct FileContents contents) {
-	// Find the first line that has .code
-	for (int i = 0; i < contents.length; i++)
-		if (strstr(contents.data[i], ".code") != NULL) return i;
-	return -1;
-}
-
+/**
+ * @brief Processes a string type data value in the data section
+ *
+ * @param line
+ * @param lineNum
+ * @param value
+ * @return int - 1 if error, 0 if no error
+ */
 int processDataString(char* line, int lineNum, void** value) {
 	int isValid = 1;
+
 	// Make sure there are two quotes "
 	int strLen = strlen(line);
 
-	char* dataValue = malloc(sizeof(char) * strLen);
+	// Only get the data value which is the third "word"
+	char* dataValue = calloc(strLen, sizeof(char));
 	sscanf(line, "%*s %*s %[^\n\r]", dataValue);
 
+	// Quote checking
 	int quoteCount = 0;
 	int firstQuote = -1;
 	int lastQuote = -1;
+
+	// Count the number of quotes
 	for (int i = 0; i < strLen; i++) {
 		if (dataValue[i] == '"' && (i == 0 || dataValue[i - 1] != '\\')) {
 			quoteCount++;
@@ -75,6 +79,8 @@ int processDataString(char* line, int lineNum, void** value) {
 			lastQuote = i;
 		};
 	}
+
+	// If there are no quotes, or there are more than 2 quotes, throw an error
 	if (quoteCount < 2) {
 		printException("Invalid string", ERROR, lineNum);
 		printf("String must be surrounded by quotes (\").\n");
@@ -88,31 +94,39 @@ int processDataString(char* line, int lineNum, void** value) {
 		free(dataValue);
 		return 1;
 	}
+
 	// Check if there is nothing else after the last quote
 	if (quoteCount == 2 && line[strLen - 1] != '"')
 		printException("Found extra characters after string (Ignoring)", WARNING, lineNum);
 
-	// Remove the quotes with strncpy
-	strncpy(dataValue, dataValue + 1, lastQuote - 1);
+	// Remove the quotes by moving the string to the left without source and destination overlap
+	memmove(dataValue, dataValue + 1, lastQuote - 1);
 	dataValue[lastQuote - 1] = '\0';
 	dataValue = realloc(dataValue, sizeof(char) * (strlen(dataValue) + 1));
 	*value = dataValue;
 
 	return !isValid;
 }
-
+/**
+ * @brief Process the data section of the file line by line
+ *
+ * @param contents
+ * @param dataSection
+ * @return int - 1 if error, 0 if no error
+ */
 int processData(struct FileContents contents, struct SectionIndex dataSection) {
 	int success = 1;
 	dataList.data = malloc(sizeof(struct Data) * dataSection.length);
 	for (int i = dataSection.start + 1; i < dataSection.end; i++) {
 		int isValid = 1;
 
+		// Get the line
 		char* line = contents.data[i];
 
 		// If the line is empty, skip it
 		if (line[0] == '\0') continue;
 
-		// Get the line and its length
+		// Get the lines its length
 		int strLen = strlen(line);
 
 		// Get the first 3 chars of the line (the data type)
@@ -126,7 +140,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 			printException("Invalid data type", ERROR, i);
 		}
 		int dataType = strcmp(dataTypeName, "int") == 0 ? TYPE_INT : TYPE_STR;
-
+		free(dataTypeName);
 		// Get the data name
 		char* dataName = malloc(sizeof(char) * strLen);
 		sscanf(line, "%*s %s", dataName);
@@ -158,15 +172,17 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 			printf("Variable name must start with a letter, and only contain letters, numbers, '_' or '-'.\n");
 		}
 
+		// Data value pointer is a pointer to the data value.
 		void* dataValuePointer = NULL;
-		// Check if dataValue will be empty
+		// Get the data value
 		char* dataValue = malloc(sizeof(char) * strLen);
 		sscanf(line, "%*s %*s %[^\n\r]", dataValue);
+		// Check if dataValue is empty
 		if (dataValue[0] == '\0') {
 			isValid = 0;
 			printException("No value specified", ERROR, i);
 		} else if (dataType == TYPE_INT) {
-			// Get the data value
+			// Get the data value again, but as an int
 			int dataValueInt;
 			sscanf(line, "%*s %*s %d", &dataValueInt);
 			dataValuePointer = malloc(sizeof(int));
@@ -174,6 +190,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 		} else if (processDataString(line, i, &dataValuePointer))
 			isValid = 0;
 
+		free(dataValue);
 		// If the variable is not valid, skip it
 		if (!isValid) {
 			success = 0;
@@ -197,11 +214,18 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 	return !success;
 }
 
+/**
+ * @brief Process the label at the given line
+ *
+ * @param lineNum
+ * @return int - 1 if error, 0 if no error
+ */
 int processLabel(int lineNum) {
 	// Get the label name
 	char* str = contents.data[lineNum];
-	char* labelName = malloc(sizeof(char) * strlen(str));
+	char* labelName = calloc(strlen(str) + 1, sizeof(char));
 	strcpy(labelName, str);
+	printf("Label name: %s\n", labelName);
 	int strLen = strlen(labelName);
 	labelName[strLen - 1] = '\0';
 
@@ -242,7 +266,7 @@ int processInstruction(int lineNum) {
 	toLowerStr(instruction);
 
 	// Allocate memory for the arguments
-	char* arg = malloc(sizeof(char) * strLen);
+	char* arg = malloc(sizeof(char) * (strLen + 1));
 	int* args = NULL;
 	int* argTypes = NULL;
 	int argCount = 0;
@@ -254,31 +278,30 @@ int processInstruction(int lineNum) {
 
 	for (int i = strlen(instruction) + 1; i < strLen + 1; i++) {
 		c = line[i];
-		if (c == ' ' || c == ',' || c == '\r' || c == '\t' || c == '\v' || c == '\f' || c == '\n' || c == '\0') {
-			if (argLen == 0) continue;
-			arg[argLen] = '\0';
-			argLen = 0;
-			argCount++;
-			// Check if the argument is a data pointer
-			if (arg[0] == '#') {
-				// Check if the variable exists
-				int dataVarExists = getDataIndex(dataList, &arg[1]) != -1;
-				if (!dataVarExists) {
-					printException(" Data variable undefined", ERROR, lineNum);
-					printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
-					return 1;
-				}
-			}
-			int argType = getArgType(dataList, arg);
-			args = realloc(args, sizeof(int) * argCount);
-			argTypes = realloc(argTypes, sizeof(int) * argCount);
-			args[argCount - 1] = convertArg(dataList, arg, argType);
-			argTypes[argCount - 1] = argType;
+		if (!(c == ' ' || c == ',' || c == '\r' || c == '\t' || c == '\v' || c == '\f' || c == '\n' || c == '\0')) {
+			arg[argLen++] = c;
 			continue;
 		}
-		arg[argLen++] = c;
+		if (argLen == 0) continue;
+		arg[argLen] = '\0';
+		argLen = 0;
+		argCount++;
+
+		// Check if the argument is a data pointer and that the variable exists, or print an error
+		if (arg[0] == '#' && arg[1] != '\0' && getDataIndex(dataList, &arg[1]) == -1) {
+			printException("Data variable undefined", ERROR, lineNum);
+			printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
+			return 1;
+		}
+
+		int argType = getArgType(dataList, arg);
+		args = realloc(args, sizeof(int) * argCount);
+		argTypes = realloc(argTypes, sizeof(int) * argCount);
+		args[argCount - 1] = convertArg(dataList, arg, argType);
+		argTypes[argCount - 1] = argType;
 	}
 	free(arg);
+
 	int foundInstruction = 0;
 	int errorDetected = 0;
 	// We loop until we find the instruction
@@ -305,10 +328,6 @@ int processInstruction(int lineNum) {
 		}
 		// Check if the arguments are valid
 		for (int j = 0; j < argCount; j++) {
-			// Check if atg type is a data pointer
-			if (argTypes[j] == DATA_POINTER_INT || argTypes[j] == DATA_POINTER_STR) {
-				getData(dataList, arg);
-			}
 			if (argTypes[j] == inst->argTypes[j]) continue;
 			printException("Invalid argument type", ERROR, lineNum);
 			// Get to the beginning of the arguments
@@ -322,13 +341,18 @@ int processInstruction(int lineNum) {
 
 		// Add to program
 		program.instructions = realloc(program.instructions, sizeof(struct ProgramInstruction) * (program.length + 1));
-		struct ProgramInstruction* progInst = malloc(sizeof(struct ProgramInstruction));
-		progInst->lineNum = lineNum;
-		progInst->args = args;
-		progInst->instructionIndex = instructionIndex;
+		struct ProgramInstruction progInst;
+		progInst.lineNum = lineNum;
+		progInst.args = args;
+		progInst.instructionIndex = instructionIndex;
 
-		program.instructions[program.length] = *progInst;
+		// Assign the pointer to the program
+		program.instructions[program.length] = progInst;
 		program.length++;
+
+		// Allocate some more memory for the program
+		char* someMem = calloc(1000, sizeof(char));
+		free(someMem);
 		// progInst = {lineNum, convertedArgs, instructionIndex};
 		break;
 	}
@@ -340,6 +364,7 @@ int processInstruction(int lineNum) {
 		printLine(lineNum);
 		printf("\n");
 	}
+	free(argTypes);
 	free(instruction);
 	return errorDetected;
 }
@@ -378,7 +403,7 @@ void printDebug(int PC) {
 		// if (i < codeSection.start || i >= codeSection.end) continue;
 
 		// Line without \n at the end
-		char* line = malloc(sizeof(char) * strlen(contents.data[i]));
+		char* line = malloc(sizeof(char) * (strlen(contents.data[i]) + 1));
 		strcpy(line, contents.data[i]);
 		line = trimStr(line);
 		line[strlen(line)] = '\0';
@@ -442,9 +467,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	printf("Data Section: %d - %d\n", dataSection.start, dataSection.end);
-	printf("Code Section: %d - %d\n", codeSection.start, codeSection.end);
-
 	if (dataSection.start == -1)
 		printException("No .data section", WARNING, -1);
 	else if (dataSection.length == 1)
@@ -467,14 +489,13 @@ int main(int argc, char* argv[]) {
 		if (debug) {
 			printDebug(programInstruction.lineNum);
 			printf("Output\n");
-			for (int i = 0; i < outputLines; i++) printf("%s", output[i]);
+			for (int i = 0; i < output.length; i++) printf("%s", output.data[i]);
 			printf("\n");
 
-		} else if (lastOutputLine != outputLines) {
-			printf("%s", output[outputLines - 1]);
-			lastOutputLine = outputLines;
+		} else if (lastOutputLine != output.length) {
+			printf("%s", output.data[output.length - 1]);
+			lastOutputLine = output.length;
 		}
-
 		// Interpret the instruction
 		((struct Instruction*)instructions[programInstruction.instructionIndex])->func(&PC, programInstruction.args);
 		usleep(200000);

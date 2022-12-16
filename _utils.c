@@ -5,12 +5,10 @@
 #include "headers.h"
 #include "globals.c"
 
-int outputLines = 0;
-void addToOutput(char* str) {
-	outputLines++;
-	output = realloc(output, outputLines * sizeof(char*));
-	output[outputLines - 1] = malloc(sizeof(char) * strlen(str));
-	strcpy(output[outputLines - 1], str);
+void pushString(struct StringArray* arr, char* str) {
+	arr->data = realloc(arr->data, sizeof(char*) * (arr->length + 1));
+	arr->data[arr->length] = str;
+	arr->length++;
 }
 
 int getDataIndex(struct DataList dataList, char* name) {

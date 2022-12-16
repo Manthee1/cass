@@ -63,12 +63,16 @@ struct ProgramInstruction {
 	int lineNum;
 	int* args;
 	int instructionIndex;  // A pointer would take up double the space. so we use an index instead
-	int dataIndex;
 };
 
 struct Program {
 	int length;
 	struct ProgramInstruction* instructions;
+};
+
+struct StringArray {
+	int length;
+	char** data;
 };
 
 enum EXCEPTION_TYPE { ERROR, WARNING, INFO };

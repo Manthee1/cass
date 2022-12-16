@@ -65,19 +65,19 @@ void outFunc(int* PC, int args[]) {
 	int reg = args[0];
 	char out[10];
 	sprintf(out, "%d", registers[reg]);
-	addToOutput(out);
+	pushString(&output, out);
 }
 struct Instruction out = {"out", 1, (int[]){REGISTER}, (void*)outFunc};
 
 // -----------------OUTS----------------
 void outsFunc(int* PC, int args[]) {
 	char* str = getDataStr(dataList, args[0]);
-	addToOutput(str);
+	pushString(&output, str);
 }
 struct Instruction outs = {"outs", 1, (int[]){DATA_POINTER_STR}, (void*)outsFunc};
 
 // -----------------OUTN----------------
-void outnFunc(int* PC, int args[]) { addToOutput("\n"); }
+void outnFunc(int* PC, int args[]) { pushString(&output, "\n"); }
 struct Instruction outn = {"outn", 0, (int[]){}, (void*)outnFunc};
 
 // -----------------IN-----------------

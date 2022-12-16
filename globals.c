@@ -16,6 +16,6 @@ int registers[REGISTER_COUNT] = {0};
 int compareFlag = 0;
 char* argTypeMap[5] = {"Register", "Number", "Label", "Data Pointer (Int)", "Data Pointer (Str)"};
 enum ARG_TYPE { REGISTER, NUMBER, LABEL, DATA_POINTER_INT, DATA_POINTER_STR, UNKNOWN };
-char** output = NULL;
+struct StringArray output = {0, NULL};
 
 #endif

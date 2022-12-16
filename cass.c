@@ -197,34 +197,6 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 	return !success;
 }
 
-int getArgType(char* arg) {
-	// Check if it's a register
-	if (arg[0] == '$') {
-		int reg = atoi(&arg[1]);
-		if (reg >= 0 && reg < REGISTER_COUNT) return REGISTER;
-	}
-
-	// Check if it's a number
-	if (isdigit(arg[0]) || arg[0] == '-') {
-		int num = atoi(arg);
-		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return NUMBER;
-	}
-
-	// Check if it's a label
-	if (getLabel(labels, arg).lineNum != -1) return LABEL;
-
-	// Check if it's a data pointer
-	if (arg[0] == '#') {
-		char* dataName = malloc(sizeof(char) * strlen(arg));
-		strcpy(dataName, &arg[1]);
-		struct Data data = getData(dataList, dataName);
-		free(dataName);
-		if (data.lineNum != -1) return data.type == TYPE_INT ? DATA_POINTER_INT : DATA_POINTER_STR;
-	}
-
-	return UNKNOWN;
-}
-
 int processLabel(int lineNum) {
 	// Get the label name
 	char* str = contents.data[lineNum];
@@ -257,33 +229,6 @@ int processLabel(int lineNum) {
 	labels.data[labels.length].PC = program.length - 1;
 	labels.length++;
 	return 0;
-}
-
-int convertArg(char* arg, int argType) {
-	int val = 0;
-	switch (argType) {
-		{
-		case REGISTER:
-			sscanf(arg, "$%d", &val);
-			break;
-		case NUMBER:
-			return atoi(arg);
-		case LABEL:
-			return getLabel(labels, arg).PC;
-		case DATA_POINTER_INT:
-		case DATA_POINTER_STR:
-			val = 0;  // This is a hack to make the IDE happy
-			// Get the data name
-			char* dataName = malloc(sizeof(char) * strlen(arg));
-			strcpy(dataName, &arg[1]);
-			val = getDataIndex(dataList, dataName);
-			free(dataName);
-			break;
-		default:
-			printException("Invalid argument type", ERROR, -1);
-		}
-	}
-	return val;
 }
 
 int processInstruction(int lineNum) {
@@ -324,10 +269,10 @@ int processInstruction(int lineNum) {
 					return 1;
 				}
 			}
-			int argType = getArgType(arg);
+			int argType = getArgType(dataList, arg);
 			args = realloc(args, sizeof(int) * argCount);
 			argTypes = realloc(argTypes, sizeof(int) * argCount);
-			args[argCount - 1] = convertArg(arg, argType);
+			args[argCount - 1] = convertArg(dataList, arg, argType);
 			argTypes[argCount - 1] = argType;
 			continue;
 		}

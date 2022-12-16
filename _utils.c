@@ -51,6 +51,56 @@ int isLabelOnLine(struct Labels labels, int line) {
 }
 int getLabelPosition(struct Labels labels, char* line) { return getLabel(labels, line).PC; }
 
+int getArgType(struct DataList dataList, char* arg) {
+	// Check if it's a register
+	if (arg[0] == '$') {
+		int reg = atoi(&arg[1]);
+		if (reg >= 0 && reg < REGISTER_COUNT) return REGISTER;
+	}
+
+	// Check if it's a number
+	if (isdigit(arg[0]) || arg[0] == '-') {
+		int num = atoi(arg);
+		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return NUMBER;
+	}
+
+	// Check if it's a label
+	if (getLabel(labels, arg).lineNum != -1) return LABEL;
+
+	// Check if it's a data pointer
+	if (arg[0] == '#') {
+		struct Data data = getData(dataList, &arg[1]);
+		if (data.lineNum != -1) return data.type == TYPE_INT ? DATA_POINTER_INT : DATA_POINTER_STR;
+	}
+
+	return UNKNOWN;
+}
+
+int convertArg(struct DataList dataList, char* arg, int argType) {
+	int val = -1;
+	switch (argType) {
+		{
+		case REGISTER:
+			sscanf(arg, "$%d", &val);
+			break;
+		case NUMBER:
+			return atoi(arg);
+		case LABEL:
+			return getLabel(labels, arg).PC;
+		case DATA_POINTER_INT:
+		case DATA_POINTER_STR:
+			val = 0;  // This is a hack to make the IDE happy
+			// Get the data name
+			val = getDataIndex(dataList, &arg[1]);
+			break;
+		default:
+			val = -1;
+			break;
+		}
+	}
+	return val;
+}
+
 int isLabel(char* str) {
 	int strLen = strlen(str);
 	if (strLen == 0) return 0;

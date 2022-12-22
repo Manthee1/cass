@@ -64,7 +64,7 @@ struct Instruction out = {"out", 1, (int[]){REGISTER}, (void*)outFunc};
 
 // -----------------OUTS----------------
 void outsFunc(int* PC, int args[]) {
-	char* str = getDataStr(dataList, args[0]);
+	char* str = getDataString(dataList, args[0]);
 	pushString(&output, str);
 }
 struct Instruction outs = {"outs", 1, (int[]){DATA_POINTER_STR}, (void*)outsFunc};

@@ -66,7 +66,7 @@ int getDataInt(struct DataList dataList, int index) {
  * @param index - the index of the data value to search for
  * @return char*
  */
-char* getDataStr(struct DataList dataList, int index) {
+char* getDataString(struct DataList dataList, int index) {
 	if (index == -1) return "";
 	if (dataList.data[index].type == TYPE_STR) return (char*)dataList.data[index].value;
 	return "";

@@ -4,7 +4,8 @@
 #include "instructions.c"
 
 // TODO: Fix registers not showing up in output
-
+// TODO: Implement a .config section that can be used to set options without having to use command line arguments
+// TODO: Send all the program processing function to a new file
 /**
  *@brief Initializes file contents into a memory buffer
  *
@@ -440,6 +441,10 @@ void printDebug(int PC) {
 	}
 }
 
+// This could be a struct
+// TODO: Make the help a struct with a name and a description and validation function pointer.
+// A.K.A. Make it more complex but also better and easier to use
+// C devs do be like: "Hmmmm. I can make this into a struct". And I think that's beautiful.
 void printHelp() {
 	printf("Usage: cass <filename> [arguments]\n");
 	printf("Arguments:\n");
@@ -453,6 +458,14 @@ void printHelp() {
 	printf("  --help, -h\t\t\t\tPrint this help message\n");
 }
 
+/**
+ *@brief Validate the argument value
+ *
+ * @param argc - The argument count
+ * @param argv - The argument array
+ * @param index - The index of the argument
+ * @param argName - The name of the argument
+ */
 void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
 	// if value begins with a '-', it is another argument
 	if (index + 1 >= argc || argv[index + 1][0] == '-') {
@@ -466,6 +479,10 @@ void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
 	}
 }
 
+/**
+ * @brief Validate the registers
+ *
+ */
 void checkAndFixRegisters() {
 	// if the value in the register is bigger than the register size, wrap it
 	for (int i = 0; i < registerCount; i++) {
@@ -488,6 +505,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+	// If help is the first argument, print the help
 	if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
 		printHelp();
 		return 0;
@@ -498,6 +516,7 @@ int main(int argc, char* argv[]) {
 	int speed = 1;
 
 	// Parse the arguments
+	// Im not gonna comment this, its pretty self explanatory, but also it will be changed soon
 	for (int i = 2; i < argc; i++) {
 		if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
 			printHelp();

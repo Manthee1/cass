@@ -3,7 +3,6 @@
 #include "_utils.c"
 #include "instructions.c"
 
-// TODO: Add runtime error handling (check if registers are valid, etc)
 // TODO: Fix registers not showing up in output
 
 /**
@@ -467,6 +466,21 @@ void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
 	}
 }
 
+void checkAndFixRegisters() {
+	// if the value in the register is bigger than the register size, wrap it
+	for (int i = 0; i < registerCount; i++) {
+		if (registers[i] <= registerSize) continue;
+		int oldVal = registers[i];
+		// Wrap the value
+		registers[i] = registers[i] % registerSize;
+		if (verbose == 0) continue;
+		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
+					  " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
+			   i, oldVal, registerSize);
+		if (strict == 1) exitMsg("Exiting due to" RED " strict mode" RESET, 1);
+	}
+}
+
 int main(int argc, char* argv[]) {
 	// The first argument is the filename
 	if (argc < 2) {
@@ -600,6 +614,7 @@ int main(int argc, char* argv[]) {
 		}
 		// Interpret the instruction
 		((struct Instruction*)instructions[programInstruction.instructionIndex])->func(&PC, programInstruction.args);
+		checkAndFixRegisters();
 		usleep(delay);
 	}
 

@@ -5,6 +5,8 @@
 
 // TODO: Add runtime error handling (check if registers are valid, etc)
 // TODO: Add more comments and clean up code
+// TODO: Fix registers not showing up in output
+// TODO: Add more --arguments
 
 /**
  *@brief Initializes file contents into a memory buffer
@@ -225,7 +227,6 @@ int processLabel(int lineNum) {
 	char* str = contents.data[lineNum];
 	char* labelName = calloc(strlen(str) + 1, sizeof(char));
 	strcpy(labelName, str);
-	printf("Label name: %s\n", labelName);
 	int strLen = strlen(labelName);
 	labelName[strLen - 1] = '\0';
 
@@ -370,8 +371,8 @@ int processInstruction(int lineNum) {
 }
 
 /**
- *@brief Check if there are any errors in the code
- *@return 0 if there are no errors, 1 if there are errors
+ * @brief Check if there are any errors in the code
+ * @return 0 if there are no errors, 1 if there are errors
  */
 int processProgram(struct FileContents contents, struct SectionIndex codeSection) {
 	int success = 1;
@@ -395,6 +396,10 @@ int processProgram(struct FileContents contents, struct SectionIndex codeSection
 	return !success;
 }
 
+/**
+ * @brief Print the debug view of the program
+ * @param PC The program counter
+ */
 void printDebug(int PC) {
 	clear();
 	printf("   Line: %d | Compare Flag: %d\n", PC, compareFlag);
@@ -430,7 +435,6 @@ void printDebug(int PC) {
 	}
 }
 
-// Get arguments from main
 int main(int argc, char* argv[]) {
 	// Check if --debug is passed
 	int debug = 0;
@@ -441,8 +445,9 @@ int main(int argc, char* argv[]) {
 		printf("Usage: cass <filename>");
 		return 1;
 	}
+
+	// Open the file and check if it exists
 	char* filename = argv[1];
-	// Check if file exists
 	FILE* file = fopen(filename, "r");
 	if (file == NULL) {
 		printf("File '%s' does not exist", filename);
@@ -453,7 +458,7 @@ int main(int argc, char* argv[]) {
 	contents = fileToArr(file);
 	fclose(file);
 
-	// Find the section indexes
+	// Find the section indexes for .data and .code
 	for (int i = 0; i < contents.length; i++) {
 		if (strstr(contents.data[i], ".data") != NULL) dataSection.start = i;
 		if (strstr(contents.data[i], ".code") != NULL) {
@@ -467,22 +472,23 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	// Validate the data and code sections
 	if (dataSection.start == -1)
 		printException("No .data section", WARNING, -1);
 	else if (dataSection.length == 1)
 		printException("No data in .data section", WARNING, -1);
-	int dataExists = (dataSection.start != -1 && dataSection.length != 1);
-
 	if (codeSection.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
 	if (codeSection.length == 0) printException("No instructions in .code section", WARNING, -1);
 
 	// Process the data and program sections
 	// if either of them return 1, error detected
+	int dataExists = (dataSection.start != -1 && dataSection.length != 1);
 	if ((dataExists && processData(contents, dataSection)) || processProgram(contents, codeSection)) {
 		printException("Errors were detected in the code and the program will not run", ERROR, -1);
 		exit(1);
 	}
 
+	// Run the program
 	int lastOutputLine = 0;
 	for (int PC = 0; PC < program.length; PC++) {
 		struct ProgramInstruction programInstruction = program.instructions[PC];
@@ -491,7 +497,6 @@ int main(int argc, char* argv[]) {
 			printf("Output\n");
 			for (int i = 0; i < output.length; i++) printf("%s", output.data[i]);
 			printf("\n");
-
 		} else if (lastOutputLine != output.length) {
 			printf("%s", output.data[output.length - 1]);
 			lastOutputLine = output.length;

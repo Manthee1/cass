@@ -49,13 +49,6 @@ void addFunc(int* PC, int args[]) {
 	int reg1 = args[0];
 	int reg2 = args[1];
 	int sum = registers[reg1] + registers[reg2];
-	// Check if the register overflows
-	if (sum > MAX_NUMBER_SIZE || sum < -MAX_NUMBER_SIZE) {
-		registers[reg1] = wrap(sum, MAX_NUMBER_SIZE, -MAX_NUMBER_SIZE);
-		printf(YELLOW "Warning:" RESET " Register " YELLOW "$%d" RESET " overflowed at " MAGENTA "line %d" RESET "\n\n",
-			   reg1, *PC);
-		return;
-	}
 	registers[reg1] = sum;
 }
 struct Instruction add = {"add", 2, (int[]){REGISTER, REGISTER}, (void*)addFunc};

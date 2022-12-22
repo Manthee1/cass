@@ -3,6 +3,7 @@
 #define GLOBALS_C
 #include "headers.h"
 
+// Initialize all structs and needed arrays into global variables
 struct FileContents contents = {0, NULL};
 
 struct SectionIndex dataSection = {-1, -1, -1};

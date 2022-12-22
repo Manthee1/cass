@@ -110,13 +110,13 @@ int getArgType(struct DataList dataList, char* arg) {
 	// Check if it's a register
 	if (arg[0] == '$') {
 		int reg = atoi(&arg[1]);
-		if (reg >= 0 && reg < REGISTER_COUNT) return REGISTER;
+		if (reg >= 0 && reg < registerCount) return REGISTER;
 	}
 
 	// Check if it's a number
 	if (isdigit(arg[0]) || arg[0] == '-') {
 		int num = atoi(arg);
-		if (num >= -MAX_NUMBER_SIZE && num <= MAX_NUMBER_SIZE) return NUMBER;
+		if (num >= -maxNumberSize && num <= maxNumberSize) return NUMBER;
 	}
 
 	// Check if it's a label

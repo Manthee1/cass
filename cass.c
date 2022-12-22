@@ -4,7 +4,6 @@
 #include "instructions.c"
 
 // TODO: Add runtime error handling (check if registers are valid, etc)
-// TODO: Add more comments and clean up code
 // TODO: Fix registers not showing up in output
 // TODO: Add more --arguments
 
@@ -424,10 +423,10 @@ void printDebug(int PC) {
 
 		// If i is smaller then register count, print the register
 		// Print 3 registers per line
-		if (i * 3 < REGISTER_COUNT) {
+		if (i * 3 < registerCount) {
 			printf("| ");
 			for (int j = 0; j < 3; j++) {
-				if (i * 3 + j >= REGISTER_COUNT) break;
+				if (i * 3 + j >= registerCount) break;
 				printf("%2d: %5d | ", i * 3 + j, registers[i * 3 + j]);
 			}
 		}
@@ -435,16 +434,75 @@ void printDebug(int PC) {
 	}
 }
 
-int main(int argc, char* argv[]) {
-	// Check if --debug is passed
-	int debug = 0;
-	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug = 1;
+void printHelp() {
+	printf("Usage: cass <filename> [arguments]\n");
+	printf("Arguments:\n");
+	printf("  --debug, -d\t\t\t\tPrint the debug view of the program\n");
+	printf("  --registers <amount>, -r <amount>\tHow many registers the program has\n");
+	printf("  --register-size <amount>, -s <amount>\tHow much bytes a register can hold\n");
+	printf("  --help, -h\t\t\t\tPrint this help message\n");
+}
 
+void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
+	// if value begins with a '-', it is another argument
+	if (index + 1 >= argc || argv[index + 1][0] == '-') {
+		printf("Expected an argument for %s\n", argName);
+		exit(1);
+	}
+	int count = atoi(argv[index + 1]);
+	if (count < 1) {
+		printf("Expected a positive integer for %s\n", argName);
+		exit(1);
+	}
+}
+
+int main(int argc, char* argv[]) {
 	// The first argument is the filename
 	if (argc < 2) {
 		printf("Usage: cass <filename>");
 		return 1;
 	}
+
+	if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+		printHelp();
+		return 0;
+	}
+
+	// Other Arguments:
+	// --debug
+	// --registers <amount>
+
+	int debug = 0;
+
+	// Parse the arguments
+	for (int i = 2; i < argc; i++) {
+		if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+			printHelp();
+			return 0;
+		}
+
+		if (strcmp(argv[i], "--debug") == 0 || strcmp(argv[i], "-d") == 0) {
+			debug = 1;
+			continue;
+		}
+		if (strcmp(argv[i], "--registers") == 0 || strcmp(argv[i], "-r") == 0) {
+			validateArgumentValue(argc, argv, i, argv[i]);
+			registerCount = atoi(argv[i + 1]);
+			i++;
+			continue;
+		}
+		if (strcmp(argv[i], "--register-size") == 0 || strcmp(argv[i], "-s") == 0) {
+			validateArgumentValue(argc, argv, i, argv[i]);
+			registerSize = atoi(argv[i + 1]);
+			i++;
+			continue;
+		}
+		printf("Unknown argument '%s'\n", argv[i]);
+		return 1;
+	}
+
+	// Initialize the registers
+	registers = calloc(registerCount, sizeof(int));
 
 	// Open the file and check if it exists
 	char* filename = argv[1];

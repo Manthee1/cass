@@ -5,6 +5,8 @@
 #include "headers.h"
 #include "globals.c"
 
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum);
+
 /**
  *@brief push a string to the end of a StringArray
  *
@@ -109,14 +111,12 @@ int getLabelPosition(struct Labels labels, char* line) { return getLabel(labels,
 int getArgType(struct DataList dataList, char* arg) {
 	// Check if it's a register
 	if (arg[0] == '$') {
-		int reg = atoi(&arg[1]);
-		if (reg >= 0 && reg < registerCount) return REGISTER;
+		return REGISTER;
 	}
 
 	// Check if it's a number
 	if (isdigit(arg[0]) || arg[0] == '-') {
-		int num = atoi(arg);
-		if (num >= -maxNumberSize && num <= maxNumberSize) return NUMBER;
+		return NUMBER;
 	}
 
 	// Check if it's a label
@@ -126,9 +126,63 @@ int getArgType(struct DataList dataList, char* arg) {
 	if (arg[0] == '#') {
 		struct Data data = getData(dataList, &arg[1]);
 		if (data.lineNum != -1) return data.type == TYPE_INT ? DATA_POINTER_INT : DATA_POINTER_STR;
+		return DATA_POINTER_GENERIC;
 	}
 
 	return UNKNOWN;
+}
+/**
+ * @brief Validate an argument (It also prints an error if it's invalid)
+ *
+ * @param dataList
+ * @param arg
+ * @param argType
+ * @param lineNum
+ * @return int
+ */
+int validateArgument(struct DataList dataList, char* arg, int argType, int lineNum) {
+	switch (argType) {
+		{
+		case REGISTER:
+			if (atoi(&arg[1]) >= registerCount) {
+				printException("Invalid register", ERROR, lineNum);
+				printf("\tRegister: %s does not exist (Only 0-%d)\n", arg, registerCount - 1);
+				printf("\tYou can supply -r <amount> to change the amount of registers\n");
+				return 1;
+			}
+			break;
+		case NUMBER:
+			if (atoi(arg) < -maxNumberSize || atoi(arg) > maxNumberSize) {
+				printException("Invalid number", ERROR, lineNum);
+				printf("\tNumber: %s is too big (Max: %d)\n", arg, maxNumberSize);
+				printf("\tYou can supply " YELLOW "-s <size>" RESET
+					   " to change the max size of a register (in bytes)\n");
+				return 1;
+			}
+			break;
+		case LABEL:
+			if (getLabel(labels, arg).lineNum == -1) {
+				printException("Invalid label", ERROR, lineNum);
+				printf("\tLabel: %s does not exist\n", arg);
+				return 1;
+			}
+			break;
+		case DATA_POINTER_INT:
+		case DATA_POINTER_STR:
+		case DATA_POINTER_GENERIC:
+			if (getData(dataList, &arg[1]).lineNum == -1) {
+				printException("Data variable undefined", ERROR, lineNum);
+				printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
+				return 1;
+			}
+			break;
+		default:
+			printException("Invalid argument", ERROR, lineNum);
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 /**

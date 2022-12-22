@@ -5,7 +5,6 @@
 
 // TODO: Add runtime error handling (check if registers are valid, etc)
 // TODO: Fix registers not showing up in output
-// TODO: Add more --arguments
 
 /**
  *@brief Initializes file contents into a memory buffer
@@ -256,6 +255,7 @@ int processLabel(int lineNum) {
 }
 
 int processInstruction(int lineNum) {
+	int errorDetected = 0;
 	char* line = contents.data[lineNum];
 	int strLen = strlen(line);
 
@@ -287,23 +287,30 @@ int processInstruction(int lineNum) {
 		argLen = 0;
 		argCount++;
 
-		// Check if the argument is a data pointer and that the variable exists, or print an error
-		if (arg[0] == '#' && arg[1] != '\0' && getDataIndex(dataList, &arg[1]) == -1) {
-			printException("Data variable undefined", ERROR, lineNum);
-			printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
-			return 1;
+		int argType = getArgType(dataList, arg);
+
+		if (validateArgument(dataList, arg, argType, lineNum) == 1) {
+			errorDetected = 1;
+			continue;
 		}
 
-		int argType = getArgType(dataList, arg);
 		args = realloc(args, sizeof(int) * argCount);
 		argTypes = realloc(argTypes, sizeof(int) * argCount);
+		// Check if the argument is valid
+
 		args[argCount - 1] = convertArg(dataList, arg, argType);
 		argTypes[argCount - 1] = argType;
 	}
 	free(arg);
 
+	if (errorDetected) {
+		free(instruction);
+		free(args);
+		free(argTypes);
+		return 1;
+	}
+
 	int foundInstruction = 0;
-	int errorDetected = 0;
 	// We loop until we find the instruction
 	for (int instructionIndex = 0; instructionIndex < INSTRUCTION_COUNT; instructionIndex++) {
 		struct Instruction* inst = (struct Instruction*)instructions[instructionIndex];
@@ -438,8 +445,12 @@ void printHelp() {
 	printf("Usage: cass <filename> [arguments]\n");
 	printf("Arguments:\n");
 	printf("  --debug, -d\t\t\t\tPrint the debug view of the program\n");
-	printf("  --registers <amount>, -r <amount>\tHow many registers the program has\n");
-	printf("  --register-size <amount>, -s <amount>\tHow much bytes a register can hold\n");
+	printf("  --registers <amount>, -r <amount>\tHow many registers the program has ($0 is not counted)\n");
+	printf("  --register-size <amount>, -S <amount>\tHow much bytes a register can hold\n");
+	printf("  --verbose, -v\t\t\t\tPrint all the normally ignored warnings and errors\n");
+	printf("  --version, -V\t\t\t\tPrint the version of the program\n");
+	printf("  --speed <amount>, -s <amount>\t\tHow many instructions to execute per second (max 100)\n");
+	printf("  --strict\t\t\t\tExit with an error if there are any runtime warnings\n");
 	printf("  --help, -h\t\t\t\tPrint this help message\n");
 }
 
@@ -469,10 +480,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Other Arguments:
-	// --debug
-	// --registers <amount>
-
 	int debug = 0;
+	int speed = 1;
 
 	// Parse the arguments
 	for (int i = 2; i < argc; i++) {
@@ -488,13 +497,41 @@ int main(int argc, char* argv[]) {
 		if (strcmp(argv[i], "--registers") == 0 || strcmp(argv[i], "-r") == 0) {
 			validateArgumentValue(argc, argv, i, argv[i]);
 			registerCount = atoi(argv[i + 1]);
+			if (registerCount > MAX_REGISTER_COUNT) {
+				printf("Register count cannot be larger than %d\n", MAX_REGISTER_COUNT);
+				return 1;
+			}
 			i++;
 			continue;
 		}
 		if (strcmp(argv[i], "--register-size") == 0 || strcmp(argv[i], "-s") == 0) {
 			validateArgumentValue(argc, argv, i, argv[i]);
 			registerSize = atoi(argv[i + 1]);
+			if (registerSize > MAX_REGISTER_SIZE) {
+				printf("Register size cannot be larger than %d\n", MAX_REGISTER_SIZE);
+				return 1;
+			}
 			i++;
+			continue;
+		}
+		if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
+			verbose = 1;
+			continue;
+		}
+		if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0) {
+			printf("Cass version %s\n", VERSION);
+			return 0;
+		}
+		if (strcmp(argv[i], "--speed") == 0 || strcmp(argv[i], "-S") == 0) {
+			validateArgumentValue(argc, argv, i, argv[i]);
+			speed = atoi(argv[i + 1]);
+			if (speed >= 100)
+				printException("Speed larger or equal to 100 is considered as instant execution\n", INFO, -1);
+			i++;
+			continue;
+		}
+		if (strcmp(argv[i], "--strict") == 0) {
+			strict = 1;
 			continue;
 		}
 		printf("Unknown argument '%s'\n", argv[i]);
@@ -503,6 +540,7 @@ int main(int argc, char* argv[]) {
 
 	// Initialize the registers
 	registers = calloc(registerCount, sizeof(int));
+	maxNumberSize = (int)pow(2, registerSize * 8 - 1) - 1;
 
 	// Open the file and check if it exists
 	char* filename = argv[1];
@@ -548,6 +586,7 @@ int main(int argc, char* argv[]) {
 
 	// Run the program
 	int lastOutputLine = 0;
+	int delay = 1000000 / speed;
 	for (int PC = 0; PC < program.length; PC++) {
 		struct ProgramInstruction programInstruction = program.instructions[PC];
 		if (debug) {
@@ -561,7 +600,7 @@ int main(int argc, char* argv[]) {
 		}
 		// Interpret the instruction
 		((struct Instruction*)instructions[programInstruction.instructionIndex])->func(&PC, programInstruction.args);
-		usleep(200000);
+		usleep(delay);
 	}
 
 	return 0;

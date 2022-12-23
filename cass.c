@@ -3,7 +3,6 @@
 #include "_utils.c"
 #include "instructions.c"
 
-// TODO: Fix registers not showing up in output
 // TODO: Implement a .config section that can be used to set options without having to use command line arguments
 // TODO: Send all the program processing function to a new file
 /**
@@ -428,13 +427,14 @@ void printDebug(int PC) {
 		// Print empty spaces after the line
 		for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
 
+		int index = i - codeSection.start - 1;
 		// If i is smaller then register count, print the register
 		// Print 3 registers per line
-		if (i * 3 < registerCount) {
+		if (index * 3 < registerCount) {
 			printf("| ");
 			for (int j = 0; j < 3; j++) {
-				if (i * 3 + j >= registerCount) break;
-				printf("%2d: %5d | ", i * 3 + j, registers[i * 3 + j]);
+				if (index * 3 + j >= registerCount) break;
+				printf("%2d: %5d | ", index * 3 + j, registers[index * 3 + j]);
 			}
 		}
 		printf("\n");

@@ -21,8 +21,10 @@ struct DataList dataList = {0, NULL};
 struct Program program = {0, NULL};
 
 // Options
+int debug = 0;
 int verbose = 0;
 int strict = 0;
+int speed = 1;
 int registerCount = DEFAULT_REGISTER_COUNT;
 int registerSize = DEFAULT_REGISTER_COUNT;
 

@@ -2,6 +2,7 @@
 #include "globals.c"
 #include "_utils.c"
 #include "instructions.c"
+#include "help.c"
 
 // TODO: Implement a .config section that can be used to set options without having to use command line arguments
 // TODO: Send all the program processing function to a new file
@@ -441,44 +442,6 @@ void printDebug(int PC) {
 	}
 }
 
-// This could be a struct
-// TODO: Make the help a struct with a name and a description and validation function pointer.
-// A.K.A. Make it more complex but also better and easier to use
-// C devs do be like: "Hmmmm. I can make this into a struct". And I think that's beautiful.
-void printHelp() {
-	printf("Usage: cass <filename> [arguments]\n");
-	printf("Arguments:\n");
-	printf("  --debug, -d\t\t\t\tPrint the debug view of the program\n");
-	printf("  --registers <amount>, -r <amount>\tHow many registers the program has ($0 is not counted)\n");
-	printf("  --register-size <amount>, -S <amount>\tHow much bytes a register can hold\n");
-	printf("  --verbose, -v\t\t\t\tPrint all the normally ignored warnings and errors\n");
-	printf("  --version, -V\t\t\t\tPrint the version of the program\n");
-	printf("  --speed <value>, -s <value>\t\tHow many instructions to execute per second (max 100)\n");
-	printf("  --strict\t\t\t\tExit with an error if there are any runtime warnings\n");
-	printf("  --help, -h\t\t\t\tPrint this help message\n");
-}
-
-/**
- *@brief Validate the argument value
- *
- * @param argc - The argument count
- * @param argv - The argument array
- * @param index - The index of the argument
- * @param argName - The name of the argument
- */
-void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
-	// if value begins with a '-', it is another argument
-	if (index + 1 >= argc || argv[index + 1][0] == '-') {
-		printf("Expected an argument for %s\n", argName);
-		exit(1);
-	}
-	int count = atoi(argv[index + 1]);
-	if (count < 1) {
-		printf("Expected a positive integer for %s\n", argName);
-		exit(1);
-	}
-}
-
 /**
  * @brief Validate the registers
  */
@@ -487,100 +450,34 @@ void checkAndFixRegisters() {
 	// If $0 has a different value than 0, set it to 0
 	if (registers[0] != 0) {
 		registers[0] = 0;
+		isValid = 0;
 		if (verbose == 0) return;
 		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$0" RESET " has the value of " MAGENTA "%d" RESET
 					  " - Setting it to 0\n",
 			   registers[0]);
-		isValid = 0;
 	}
 
 	// if the value in the register is bigger than the register size, wrap it
 	for (int i = 0; i < registerCount; i++) {
 		if (registers[i] <= registerSize) continue;
 		int oldVal = registers[i];
+		isValid = 0;
 		// Wrap the value
 		registers[i] = registers[i] % registerSize;
 		if (verbose == 0) continue;
 		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
 					  " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
 			   i, oldVal, registerSize);
-		isValid = 1;
 	}
-	if (strict == 1 && isValid == 0) exitMsg("Exiting due to" RED " strict mode" RESET, 1);
+	if (strict == 1 && isValid == 0)
+		exitMsg("Exiting due to" RED " strict mode" RESET "\nUse -v to see runtime warnings\n", 1);
 }
 
 int main(int argc, char* argv[]) {
-	// The first argument is the filename
-	if (argc < 2) {
-		printf("Usage: cass <filename>");
-		return 1;
-	}
-
-	// If help is the first argument, print the help
-	if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
-		printHelp();
-		return 0;
-	}
-
-	// Other Arguments:
-	int debug = 0;
-	int speed = 1;
-
-	// Parse the arguments
-	// Im not gonna comment this, its pretty self explanatory, but also it will be changed soon
-	for (int i = 2; i < argc; i++) {
-		if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-			printHelp();
-			return 0;
-		}
-
-		if (strcmp(argv[i], "--debug") == 0 || strcmp(argv[i], "-d") == 0) {
-			debug = 1;
-			continue;
-		}
-		if (strcmp(argv[i], "--registers") == 0 || strcmp(argv[i], "-r") == 0) {
-			validateArgumentValue(argc, argv, i, argv[i]);
-			registerCount = atoi(argv[i + 1]);
-			if (registerCount > MAX_REGISTER_COUNT) {
-				printf("Register count cannot be larger than %d\n", MAX_REGISTER_COUNT);
-				return 1;
-			}
-			i++;
-			continue;
-		}
-		if (strcmp(argv[i], "--register-size") == 0 || strcmp(argv[i], "-s") == 0) {
-			validateArgumentValue(argc, argv, i, argv[i]);
-			registerSize = atoi(argv[i + 1]);
-			if (registerSize > MAX_REGISTER_SIZE) {
-				printf("Register size cannot be larger than %d\n", MAX_REGISTER_SIZE);
-				return 1;
-			}
-			i++;
-			continue;
-		}
-		if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
-			verbose = 1;
-			continue;
-		}
-		if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0) {
-			printf("Cass version %s\n", VERSION);
-			return 0;
-		}
-		if (strcmp(argv[i], "--speed") == 0 || strcmp(argv[i], "-S") == 0) {
-			validateArgumentValue(argc, argv, i, argv[i]);
-			speed = atoi(argv[i + 1]);
-			if (speed >= 100)
-				printException("Speed larger or equal to 100 is considered as instant execution\n", INFO, -1);
-			i++;
-			continue;
-		}
-		if (strcmp(argv[i], "--strict") == 0) {
-			strict = 1;
-			continue;
-		}
-		printf("Unknown argument '%s'\n", argv[i]);
-		return 1;
-	}
+	if (argc == 1) printHelp();
+	if (argc == 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) printHelp();
+	if (argc == 2 && (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-V") == 0)) printVersion();
+	if (argc > 2) validateOptions(argc, argv);
 
 	// Initialize the registers
 	registers = calloc(registerCount, sizeof(int));

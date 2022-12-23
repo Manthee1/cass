@@ -453,7 +453,7 @@ void printHelp() {
 	printf("  --register-size <amount>, -S <amount>\tHow much bytes a register can hold\n");
 	printf("  --verbose, -v\t\t\t\tPrint all the normally ignored warnings and errors\n");
 	printf("  --version, -V\t\t\t\tPrint the version of the program\n");
-	printf("  --speed <amount>, -s <amount>\t\tHow many instructions to execute per second (max 100)\n");
+	printf("  --speed <value>, -s <value>\t\tHow many instructions to execute per second (max 100)\n");
 	printf("  --strict\t\t\t\tExit with an error if there are any runtime warnings\n");
 	printf("  --help, -h\t\t\t\tPrint this help message\n");
 }
@@ -481,9 +481,19 @@ void validateArgumentValue(int argc, char* argv[], int index, char* argName) {
 
 /**
  * @brief Validate the registers
- *
  */
 void checkAndFixRegisters() {
+	int isValid = 1;
+	// If $0 has a different value than 0, set it to 0
+	if (registers[0] != 0) {
+		registers[0] = 0;
+		if (verbose == 0) return;
+		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$0" RESET " has the value of " MAGENTA "%d" RESET
+					  " - Setting it to 0\n",
+			   registers[0]);
+		isValid = 0;
+	}
+
 	// if the value in the register is bigger than the register size, wrap it
 	for (int i = 0; i < registerCount; i++) {
 		if (registers[i] <= registerSize) continue;
@@ -494,8 +504,9 @@ void checkAndFixRegisters() {
 		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
 					  " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
 			   i, oldVal, registerSize);
-		if (strict == 1) exitMsg("Exiting due to" RED " strict mode" RESET, 1);
+		isValid = 1;
 	}
+	if (strict == 1 && isValid == 0) exitMsg("Exiting due to" RED " strict mode" RESET, 1);
 }
 
 int main(int argc, char* argv[]) {

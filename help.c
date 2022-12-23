@@ -4,7 +4,9 @@
 #include "globals.c"
 
 #define OPTION_COUNT 8
+
 void printHelp();
+
 struct HelpItem {
 	char* name;
 	char shortName;
@@ -13,6 +15,16 @@ struct HelpItem {
 	int (*validate)();
 };
 
+/**
+ *@brief Validates the arguments passed to the program
+ *
+ * @param argc - The number of arguments
+ * @param argv - The arguments
+ * @param index -	The index of the current argument
+ * @param min - The minimum value for the argument
+ * @param max - The maximum value for the argument
+ * @param argName - The name of the argument
+ */
 void validateOptionValueInt(int argc, char* argv[], int index, int min, int max, char* argName) {
 	// if value begins with a '-', it is another argument
 	if (index + 1 >= argc || argv[index + 1][0] == '-') {
@@ -34,7 +46,14 @@ void validateOptionValueInt(int argc, char* argv[], int index, int min, int max,
 		exit(1);
 	}
 }
-
+/**
+ * @brief Similar to validateOptionValueInt, but for strings
+ *
+ * @param argc - The number of arguments
+ * @param argv - The arguments
+ * @param index - The index of the current argument
+ * @param argName - The name of the argument
+ */
 void validateOptionValueString(int argc, char* argv[], int index, char* argName) {
 	// if value begins with a '-', it is another argument
 	if (index + 1 >= argc || argv[index + 1][0] == '-') {
@@ -47,6 +66,7 @@ int printVersion() {
 	printf("Version: %s\n", VERSION);
 	exit(0);
 }
+
 int verboseValidate(int argc, char* argv[], int* index) {
 	verbose = 1;
 	return 0;
@@ -84,7 +104,7 @@ int speedValidate(int argc, char* argv[], int* index) {
 	return 0;
 }
 
-// Help gets printHelp functin
+// The help items
 struct HelpItem helpItems[OPTION_COUNT] = {
 	{"help", 'h', "Display this help message", (int (*)())printHelp},
 	{"verbose", 'v', "Display verbose output", verboseValidate},
@@ -96,6 +116,12 @@ struct HelpItem helpItems[OPTION_COUNT] = {
 	{"speed", 's', "How many instructions to execute per second (max 100)", speedValidate},
 };
 
+/**
+ *@brief Checks if the arguments passed to the program are valid
+ *
+ * @param argc - The number of arguments
+ * @param argv - The arguments
+ */
 void validateOptions(int argc, char* argv[]) {
 	for (int i = 2; i < argc; i++) {
 		int found = 0;
@@ -124,7 +150,9 @@ void validateOptions(int argc, char* argv[]) {
 		}
 	}
 }
-
+/**
+ *@brief Prints the help message
+ */
 void printHelp() {
 	printf("Usage: cass <filename> [options]\n");
 	for (int i = 0; i < OPTION_COUNT; i++) {
@@ -139,49 +167,3 @@ void printHelp() {
 	}
 	exit(0);
 }
-
-// if (strcmp(argv[i], "--debug") == 0 || strcmp(argv[i], "-d") == 0) {
-// 	debug = 1;
-// 	continue;
-// }
-// if (strcmp(argv[i], "--registers") == 0 || strcmp(argv[i], "-r") == 0) {
-// 	validateArgumentValue(argc, argv, i, argv[i]);
-// 	registerCount = atoi(argv[i + 1]);
-// 	if (registerCount > MAX_REGISTER_COUNT) {
-// 		printf("Register count cannot be larger than %d\n", MAX_REGISTER_COUNT);
-// 		return 1;
-// 	}
-// 	i++;
-// 	continue;
-// }
-// if (strcmp(argv[i], "--register-size") == 0 || strcmp(argv[i], "-s") == 0) {
-// 	validateArgumentValue(argc, argv, i, argv[i]);
-// 	registerSize = atoi(argv[i + 1]);
-// 	if (registerSize > MAX_REGISTER_SIZE) {
-// 		printf("Register size cannot be larger than %d\n", MAX_REGISTER_SIZE);
-// 		return 1;
-// 	}
-// 	i++;
-// 	continue;
-// }
-// if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
-// 	verbose = 1;
-// 	continue;
-// }
-// if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0) {
-// 	printf("Cass version %s\n", VERSION);
-// 	return 0;
-// }
-// if (strcmp(argv[i], "--speed") == 0 || strcmp(argv[i], "-S") == 0) {
-// 	validateArgumentValue(argc, argv, i, argv[i]);
-// 	speed = atoi(argv[i + 1]);
-// 	if (speed >= 100) printException("Speed larger or equal to 100 is considered as instant execution\n", INFO, -1);
-// 	i++;
-// 	continue;
-// }
-// if (strcmp(argv[i], "--strict") == 0) {
-// 	strict = 1;
-// 	continue;
-// }
-// printf("Unknown argument '%s'\n", argv[i]);
-// return 1;

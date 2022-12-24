@@ -1,4 +1,7 @@
 
+#ifndef INSTRUCTIONS_C
+#define INSTRUCTIONS_C
+
 #include "headers.h"
 #include "globals.c"
 #include "_utils.c"
@@ -100,3 +103,5 @@ struct Instruction movedInst = {"moved", 2, (int[]){REGISTER, DATA_POINTER_INT},
 #define INSTRUCTION_COUNT 12
 void* instructions[INSTRUCTION_COUNT] = {&mov, &movc, &jmp,	 &jc, &cmp,		 &add,
 										 &out, &outs, &outn, &in, &randInst, &movedInst};
+
+#endif

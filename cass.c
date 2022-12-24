@@ -6,44 +6,6 @@
 #include "process.c"
 
 // TODO: Implement a .config section that can be used to set options without having to use command line arguments
-/**
- *@brief Initializes file contents into a memory buffer
- *
- * @param file
- * @return struct FileContents
- */
-struct FileContents fileToArr(FILE* file) {
-	// Get length of file in lines
-	int fileLenLines = getFileLengthLines(file);
-	int fileLen = getFileLength(file);
-
-	// Initialize buffer
-	struct FileContents contents;
-	contents.length = 0;
-
-	// Allocate enough memory for the buffer
-	contents.data = calloc(fileLenLines, sizeof(char*));
-	char* lines = calloc(fileLen + 1, sizeof(char));
-	// Place 'E' at the end of the buffer
-	lines[fileLen] = 'E';
-
-	// line pointer at index 0 of lines
-	char* line = lines;
-	// Read file into buffer
-	char c;
-	for (int i = 0; i < fileLen; i++) {
-		c = fgetc(file);
-		if (c == '\n') {
-			contents.data[contents.length] = line;
-			contents.length++;
-			line = &lines[i + 1];
-			continue;
-		}
-		lines[i] = c;
-	}
-
-	return contents;
-}
 
 /**
  * @brief Print the debug view of the program

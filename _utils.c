@@ -20,6 +20,90 @@ void pushString(struct StringArray* arr, char* str) {
 }
 
 /**
+ *@brief Get the amount of lines in a file
+ *
+ * @param file - the file to get the amount of lines from
+ * @return int
+ */
+int getFileLengthLines(FILE* file) {
+	// Save pointer
+	fpos_t pos;
+	fgetpos(file, &pos);
+
+	// Get amount of lines
+	int length = 0;
+	char c;
+	while ((c = fgetc(file)) != EOF)
+		if (c == '\n') length++;
+
+	// Reset pointer
+	fsetpos(file, &pos);
+
+	return length;
+}
+
+// Very similar to getFileLengthLines, which makes it kinda redundant, but it's little different and I'm too lazy.
+/**
+ *@brief Get the amount of characters in a file
+ *
+ * @param file - the file to get the amount of characters from
+ * @return int
+ */
+int getFileLength(FILE* file) {
+	// Save pointer
+	fpos_t pos;
+	fgetpos(file, &pos);
+
+	// Get amount of characters
+	fseek(file, 0, SEEK_END);
+	int length = ftell(file);
+
+	// Reset pointer
+	fsetpos(file, &pos);
+
+	return length;
+}
+
+/**
+ *@brief Initializes file contents into a memory buffer
+ *
+ * @param file
+ * @return struct FileContents
+ */
+struct FileContents fileToArr(FILE* file) {
+	// Get length of file in lines
+	int fileLenLines = getFileLengthLines(file);
+	int fileLen = getFileLength(file);
+
+	// Initialize buffer
+	struct FileContents contents;
+	contents.length = 0;
+
+	// Allocate enough memory for the buffer
+	contents.data = calloc(fileLenLines, sizeof(char*));
+	char* lines = calloc(fileLen + 1, sizeof(char));
+	// Place 'E' at the end of the buffer
+	lines[fileLen] = 'E';
+
+	// line pointer at index 0 of lines
+	char* line = lines;
+	// Read file into buffer
+	char c;
+	for (int i = 0; i < fileLen; i++) {
+		c = fgetc(file);
+		if (c == '\n') {
+			contents.data[contents.length] = line;
+			contents.length++;
+			line = &lines[i + 1];
+			continue;
+		}
+		lines[i] = c;
+	}
+
+	return contents;
+}
+
+/**
  *@brief Get the index of a data value in a DataList given its name
  *
  * @param dataList - the DataList to search
@@ -261,51 +345,6 @@ char* trimStr(char* str) {
 	for (int i = start; i <= end; i++) newStr[i - start] = str[i];
 	newStr[end - start + 1] = '\0';
 	return newStr;
-}
-
-/**
- *@brief Get the amount of lines in a file
- *
- * @param file - the file to get the amount of lines from
- * @return int
- */
-int getFileLengthLines(FILE* file) {
-	// Save pointer
-	fpos_t pos;
-	fgetpos(file, &pos);
-
-	// Get amount of lines
-	int length = 0;
-	char c;
-	while ((c = fgetc(file)) != EOF)
-		if (c == '\n') length++;
-
-	// Reset pointer
-	fsetpos(file, &pos);
-
-	return length;
-}
-
-// Very similar to getFileLengthLines, which makes it kinda redundant, but it's little different and I'm too lazy.
-/**
- *@brief Get the amount of characters in a file
- *
- * @param file - the file to get the amount of characters from
- * @return int
- */
-int getFileLength(FILE* file) {
-	// Save pointer
-	fpos_t pos;
-	fgetpos(file, &pos);
-
-	// Get amount of characters
-	fseek(file, 0, SEEK_END);
-	int length = ftell(file);
-
-	// Reset pointer
-	fsetpos(file, &pos);
-
-	return length;
 }
 
 // Wrap a number between a min and max

@@ -4,8 +4,12 @@
 #include "instructions.c"
 #include "help.c"
 #include "process.c"
+#include "keyboard.c"
 
 // TODO: Implement a .config section that can be used to set options without having to use command line arguments
+// TODO: Improve the debug mode by adding a way to step through the program line by line, a way to set breakpoints,
+// modify registers, etc. (Terminal UI)
+// TODO: Make a keyboard keypress interpreter that can be used to control the program while it is running
 
 /**
  * @brief Print the debug view of the program

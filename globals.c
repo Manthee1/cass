@@ -9,6 +9,7 @@
 #define DEFAULT_REGISTER_SIZE 32
 #define MAX_REGISTER_COUNT 64
 #define MAX_REGISTER_SIZE 32
+#define MAX_SPEED 1000
 
 // Initialize all structs and needed arrays into global variables
 struct FileContents contents = {0, NULL};

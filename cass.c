@@ -154,17 +154,17 @@ int main(int argc, char* argv[]) {
 
 	// Validate the data and code sections
 	if (dataSection.start == -1)
-		printException("No .data section", WARNING, -1);
+		printException("No .data section", WARNING, -1, NULL);
 	else if (dataSection.length == 1)
-		printException("No data in .data section", WARNING, -1);
+		printException("No data in .data section", WARNING, -1, NULL);
 	if (codeSection.length == -1) exitMsg(RED "Error: No .code section" RESET, 1);
-	if (codeSection.length == 0) printException("No instructions in .code section", WARNING, -1);
+	if (codeSection.length == 0) printException("No instructions in .code section", WARNING, -1, NULL);
 
 	// Process the data and program sections
 	// if either of them return 1, error detected
 	int dataExists = (dataSection.start != -1 && dataSection.length != 1);
 	if ((dataExists && processData(contents, dataSection)) || processProgram(contents, codeSection)) {
-		printException("Errors were detected in the code and the program will not run", ERROR, -1);
+		printException("Errors were detected in the code and the program will not run", ERROR, -1, NULL);
 		exit(1);
 	}
 

@@ -9,6 +9,7 @@
 #include "string.h"
 #include "unistd.h"
 #include "time.h"
+#include "stdarg.h"
 
 #define BOLD "\033[1m"
 #define YELLOW "\033[1;33m"

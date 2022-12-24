@@ -40,13 +40,13 @@ int processDataString(char* line, int lineNum, void** value) {
 
 	// If there are no quotes, or there are more than 2 quotes, throw an error
 	if (quoteCount < 2) {
-		printException("Invalid string", ERROR, lineNum);
+		printException("Invalid string", ERROR, lineNum, NULL);
 		printf("String must be surrounded by quotes (\").\n");
 		free(dataValue);
 		return 1;
 	}
 	if (quoteCount > 2) {
-		printException("Invalid string", ERROR, lineNum);
+		printException("Invalid string", ERROR, lineNum, NULL);
 		printf("String must only contain one set of quotes (" YELLOW "\"STRING\"" RESET ").\n");
 		printf("Make sure you escape other quotes with a backslash (" YELLOW "\\\"" RESET ").\n");
 		free(dataValue);
@@ -55,7 +55,7 @@ int processDataString(char* line, int lineNum, void** value) {
 
 	// Check if there is nothing else after the last quote
 	if (quoteCount == 2 && line[strLen - 1] != '"')
-		printException("Found extra characters after string (Ignoring)", WARNING, lineNum);
+		printException("Found extra characters after string (Ignoring)", WARNING, lineNum, NULL);
 
 	// Remove the quotes by moving the string to the left without source and destination overlap
 	memmove(dataValue, dataValue + 1, lastQuote - 1);
@@ -95,7 +95,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 		// Check if the data type is valid
 		if (strcmp(dataTypeName, "int") != 0 && strcmp(dataTypeName, "str") != 0) {
 			isValid = 0;
-			printException("Invalid data type", ERROR, i);
+			printException("Invalid data type", ERROR, i, NULL);
 		}
 		int dataType = strcmp(dataTypeName, "int") == 0 ? TYPE_INT : TYPE_STR;
 		free(dataTypeName);
@@ -109,7 +109,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 		struct Data duplicateData = getData(dataList, dataName);
 		if (duplicateData.lineNum != -1) {
 			isValid = 0;
-			printException("Variable name already defined", ERROR, i);
+			printException("Variable name already defined", ERROR, i, NULL);
 			printLine(duplicateData.lineNum);
 			printf("\n");
 		}
@@ -126,7 +126,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 			}
 		if (!isValidName) {
 			isValid = 0;
-			printException("Invalid variable name", ERROR, i);
+			printException("Invalid variable name", ERROR, i, NULL);
 			printf("Variable name must start with a letter, and only contain letters, numbers, '_' or '-'.\n");
 		}
 
@@ -138,7 +138,7 @@ int processData(struct FileContents contents, struct SectionIndex dataSection) {
 		// Check if dataValue is empty
 		if (dataValue[0] == '\0') {
 			isValid = 0;
-			printException("No value specified", ERROR, i);
+			printException("No value specified", ERROR, i, NULL);
 		} else if (dataType == TYPE_INT) {
 			// Get the data value again, but as an int
 			int dataValueInt;
@@ -191,7 +191,7 @@ int processLabel(int lineNum) {
 	int labelExists = duplicateLabel.lineNum;
 
 	if (labelExists != -1) {
-		printException(" Label '" YELLOW "%s" RESET "' is already defined", WARNING, lineNum);
+		printException(" Label '" YELLOW "%s" RESET "' is already defined", WARNING, lineNum, NULL);
 		printLine(labelExists);
 		printf("\n");
 		return 0;
@@ -278,7 +278,7 @@ int processInstruction(int lineNum) {
 		if (argCount != inst->argCount) {
 			// "Invalid number of arguments for instruction " YELLOW "mov\n" RESET "Expected " YELLOW "%d" RESET
 			// " argument/s, got " YELLOW "%d" RESET "\n"
-			printException("Invalid number of arguments", ERROR, lineNum);
+			printException("Invalid number of arguments", ERROR, lineNum, NULL);
 
 			// print '^' under the arguments
 			int instructionLen = strlen(inst->name) + 1;
@@ -294,7 +294,7 @@ int processInstruction(int lineNum) {
 		// Check if the arguments are valid
 		for (int j = 0; j < argCount; j++) {
 			if (argTypes[j] == inst->argTypes[j]) continue;
-			printException("Invalid argument type", ERROR, lineNum);
+			printException("Invalid argument type", ERROR, lineNum, NULL);
 			// Get to the beginning of the arguments
 
 			printf("\tExpected " YELLOW "%s" RESET ", got " YELLOW "%s" RESET " for argument " YELLOW "%d" RESET "\n\n",

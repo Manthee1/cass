@@ -16,11 +16,11 @@ struct HelpItem {
 };
 
 /**
- *@brief Validates the arguments passed to the program
+ * @brief Validates the arguments passed to the program
  *
  * @param argc - The number of arguments
  * @param argv - The arguments
- * @param index -	The index of the current argument
+ * @param index - The index of the current argument
  * @param min - The minimum value for the argument
  * @param max - The maximum value for the argument
  * @param argName - The name of the argument
@@ -46,6 +46,7 @@ void validateOptionValueInt(int argc, char* argv[], int index, int min, int max,
 		exit(1);
 	}
 }
+
 /**
  * @brief Similar to validateOptionValueInt, but for strings
  *
@@ -99,7 +100,11 @@ int registerSizeValidate(int argc, char* argv[], int* index) {
 int speedValidate(int argc, char* argv[], int* index) {
 	validateOptionValueInt(argc, argv, *index, 1, -1, argv[*index]);
 	speed = atoi(argv[*index + 1]);
-	if (speed >= 100) printException("Speed larger or equal to 100 is considered as instant execution\n", INFO, -1);
+
+	if (speed >= MAX_SPEED) {
+		printException("Speed larger or equal to %d is considered as instant execution\n", INFO, -1, MAX_SPEED);
+		speed = MAX_SPEED;
+	}
 	(*index)++;
 	return 0;
 }

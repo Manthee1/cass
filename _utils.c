@@ -5,7 +5,7 @@
 #include "headers.h"
 #include "globals.c"
 
-void printException(char* message, enum EXCEPTION_TYPE type, int lineNum);
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum, ...);
 
 /**
  *@brief push a string to the end of a StringArray
@@ -145,7 +145,7 @@ int validateArgument(struct DataList dataList, char* arg, int argType, int lineN
 		{
 		case REGISTER:
 			if (atoi(&arg[1]) >= registerCount) {
-				printException("Invalid register", ERROR, lineNum);
+				printException("Invalid register", ERROR, lineNum, NULL);
 				printf("\tRegister: %s does not exist (Only 0-%d)\n", arg, registerCount - 1);
 				printf("\tYou can supply -r <amount> to change the amount of registers\n");
 				return 1;
@@ -153,7 +153,7 @@ int validateArgument(struct DataList dataList, char* arg, int argType, int lineN
 			break;
 		case NUMBER:
 			if (atoi(arg) < -maxNumberSize || atoi(arg) > maxNumberSize) {
-				printException("Invalid number", ERROR, lineNum);
+				printException("Invalid number", ERROR, lineNum, NULL);
 				printf("\tNumber: %s is too big (Max: %d)\n", arg, maxNumberSize);
 				printf("\tYou can supply " YELLOW "-s <size>" RESET
 					   " to change the max size of a register (in bytes)\n");
@@ -162,7 +162,7 @@ int validateArgument(struct DataList dataList, char* arg, int argType, int lineN
 			break;
 		case LABEL:
 			if (getLabel(labels, arg).lineNum == -1) {
-				printException("Invalid label", ERROR, lineNum);
+				printException("Invalid label", ERROR, lineNum, NULL);
 				printf("\tLabel: %s does not exist\n", arg);
 				return 1;
 			}
@@ -171,13 +171,13 @@ int validateArgument(struct DataList dataList, char* arg, int argType, int lineN
 		case DATA_POINTER_STR:
 		case DATA_POINTER_GENERIC:
 			if (getData(dataList, &arg[1]).lineNum == -1) {
-				printException("Data variable undefined", ERROR, lineNum);
+				printException("Data variable undefined", ERROR, lineNum, NULL);
 				printf(YELLOW "\t\t%s" RESET " is not defined in the data section\n", &arg[1]);
 				return 1;
 			}
 			break;
 		default:
-			printException("Invalid argument", ERROR, lineNum);
+			printException("Invalid argument", ERROR, lineNum, NULL);
 			return 1;
 		}
 	}
@@ -326,7 +326,7 @@ void printLine(int lineNum) { printf(MAGENTA "\t%d " RESET "| %s\n", lineNum + 1
  * @param type - the type of exception (ERROR, WARNING, INFO)
  * @param lineNum - the line number of the exception (-1 if not applicable)
  */
-void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
+void printException(char* message, enum EXCEPTION_TYPE type, int lineNum, ...) {
 	switch (type) {
 	case ERROR:
 		printf(RED "Error" RESET);
@@ -338,12 +338,27 @@ void printException(char* message, enum EXCEPTION_TYPE type, int lineNum) {
 		printf(GREEN "Info" RESET);
 		break;
 	}
+
+	va_list args;
+	va_start(args, lineNum);
+	// Format with vsprintf
+	int length = vsnprintf(NULL, 0, message, args);
+	va_end(args);
+
+	char* formattedMessage = malloc(sizeof(char) * (length + 1));
+	va_start(args, lineNum);
+	vsprintf(formattedMessage, message, args);
+	va_end(args);
+
 	if (lineNum == -1) {
-		printf(": %s\n", message);
+		printf(": %s\n", formattedMessage);
+		free(formattedMessage);
 		return;
 	}
-	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum + 1, message);
+	printf(" on line " MAGENTA "%d" RESET ": %s\n", lineNum + 1, formattedMessage);
 	printLine(lineNum);
+
+	free(formattedMessage);
 }
 
 #endif

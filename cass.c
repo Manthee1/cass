@@ -82,6 +82,23 @@ void checkAndFixRegisters() {
 		exitMsg("Exiting due to" RED " strict mode" RESET "\nUse -v to see runtime warnings\n", 1);
 }
 
+int lastOutputLine = 0;
+void runInstruction(int* PC) {
+	struct ProgramInstruction programInstruction = program.instructions[*PC];
+	if (debug) {
+		printDebug(programInstruction.lineNum);
+		printf("Output\n");
+		for (int i = 0; i < output.length; i++) printf("%s", output.data[i]);
+		printf("\n");
+	} else if (lastOutputLine != output.length) {
+		printf("%s", output.data[output.length - 1]);
+		lastOutputLine = output.length;
+	}
+	// Interpret the instruction
+	((struct Instruction*)instructions[programInstruction.instructionIndex])->func(PC, programInstruction.args);
+	checkAndFixRegisters();
+}
+
 int main(int argc, char* argv[]) {
 	if (argc == 1) printHelp();
 	if (argc == 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) printHelp();
@@ -134,25 +151,48 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
+	kInit();
 	// Run the program
-	int lastOutputLine = 0;
-	int delay = 1000000 / speed;
-	for (int PC = 0; PC < program.length; PC++) {
-		struct ProgramInstruction programInstruction = program.instructions[PC];
-		if (debug) {
-			printDebug(programInstruction.lineNum);
-			printf("Output\n");
-			for (int i = 0; i < output.length; i++) printf("%s", output.data[i]);
-			printf("\n");
-		} else if (lastOutputLine != output.length) {
-			printf("%s", output.data[output.length - 1]);
-			lastOutputLine = output.length;
+	int interval = 1000000 / speed;
+
+	int PC = 0;
+	// Use clock() to get the time difference
+	int start = clock();
+	int end = 0;
+	int time = 0;
+
+	int c = 0;
+
+	int paused = 0;
+	int runOne = 0;
+
+	while (1) {
+		end = clock();
+		time = end - start;
+
+		// Check if a key was pressed
+		if ((c = getKeyPress()) != -1) {
+			printf("Key pressed: %d\n", c);
+			if (paused && c == 2) runOne = 1;
+
+			if (c == 'p') paused = !paused;
+
+			if (c == 'c') break;
 		}
-		// Interpret the instruction
-		((struct Instruction*)instructions[programInstruction.instructionIndex])->func(&PC, programInstruction.args);
-		checkAndFixRegisters();
-		usleep(delay);
+
+		// If the time difference is bigger than the interval, run the instruction
+		if ((time > interval && !paused) || runOne) {
+			runInstruction(&PC);
+			PC++;
+			if (PC >= program.length) break;
+			start = clock();
+			runOne = 0;
+		}
 	}
+
+	// Free the memory
+	free(registers);
+	// freeArr(&contents);
 
 	return 0;
 }

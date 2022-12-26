@@ -135,7 +135,6 @@ int main(int argc, char* argv[]) {
 
 		// Check if a key was pressed
 		if ((c = getKeyPress()) != -1) {
-			printf("Key pressed: %d\n", c);
 			switch (c) {
 			case 267:
 			case 266:
@@ -154,7 +153,7 @@ int main(int argc, char* argv[]) {
 			case 'p':
 			case 217:
 				paused = !paused;
-				if (debug) printDebug(PC);
+				if (debug) printDebug(PC - 1);
 				break;
 			case 27:
 				return 0;

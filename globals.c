@@ -33,6 +33,9 @@ int registerSize = DEFAULT_REGISTER_COUNT;
 int screenWidth = 0;
 int screenHeight = 0;
 
+// Debug
+int paused = 0;
+
 int* registers = NULL;	// Initialized in main()
 int maxNumberSize = 0;	// Initialized in main()
 int compareFlag = 0;

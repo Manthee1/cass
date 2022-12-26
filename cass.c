@@ -5,51 +5,11 @@
 #include "help.c"
 #include "process.c"
 #include "keyboard.c"
+#include "debug.c"
 
 // TODO: Implement a .config section that can be used to set options without having to use command line arguments
 // TODO: Improve the debug mode by adding a way to step through the program line by line, a way to set breakpoints,
 // modify registers, etc. (Terminal UI)
-// TODO: Make a keyboard keypress interpreter that can be used to control the program while it is running
-
-/**
- * @brief Print the debug view of the program
- * @param PC The program counter
- */
-void printDebug(int PC) {
-	clear();
-	printf("   Line: %d | Compare Flag: %d\n", PC, compareFlag);
-
-	for (int i = codeSection.start + 1; i < codeSection.end; i++) {
-		// if (i < codeSection.start || i >= codeSection.end) continue;
-
-		// Line without \n at the end
-		char* line = malloc(sizeof(char) * (strlen(contents.data[i]) + 1));
-		strcpy(line, contents.data[i]);
-		line = trimStr(line);
-		line[strlen(line)] = '\0';
-
-		// If we are at the PC, print a '>' before the line
-		if (i == PC)
-			printf(YELLOW ">" MAGENTA " %3d" RESET " | " YELLOW "%s" RESET, i, line);
-		else
-			printf(MAGENTA "  %3d " RESET "| %s", i, line);
-
-		// Print empty spaces after the line
-		for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
-
-		int index = i - codeSection.start - 1;
-		// If i is smaller then register count, print the register
-		// Print 3 registers per line
-		if (index * 3 < registerCount) {
-			printf("| ");
-			for (int j = 0; j < 3; j++) {
-				if (index * 3 + j >= registerCount) break;
-				printf("%2d: %5d | ", index * 3 + j, registers[index * 3 + j]);
-			}
-		}
-		printf("\n");
-	}
-}
 
 /**
  * @brief Validate the registers
@@ -61,9 +21,9 @@ void checkAndFixRegisters() {
 		registers[0] = 0;
 		isValid = 0;
 		if (verbose == 0) return;
-		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$0" RESET " has the value of " MAGENTA "%d" RESET
-					  " - Setting it to 0\n",
-			   registers[0]);
+		printException(YELLOW "Warning:" RESET " Register " MAGENTA "$0" RESET " has the value of " MAGENTA "%d" RESET
+							  " - Setting it to 0\n",
+					   WARNING, -1, registers[0]);
 	}
 
 	// if the value in the register is bigger than the register size, wrap it
@@ -74,9 +34,9 @@ void checkAndFixRegisters() {
 		// Wrap the value
 		registers[i] = registers[i] % registerSize;
 		if (verbose == 0) continue;
-		printf(YELLOW "Warning:" RESET " Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
-					  " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
-			   i, oldVal, registerSize);
+		printException("Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
+					   " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
+					   WARNING, -1, i, oldVal, registerSize);
 	}
 	if (strict == 1 && isValid == 0)
 		exitMsg("Exiting due to" RED " strict mode" RESET "\nUse -v to see runtime warnings\n", 1);
@@ -84,17 +44,14 @@ void checkAndFixRegisters() {
 
 int lastOutputLine = 0;
 void runInstruction(int* PC) {
-	struct ProgramInstruction programInstruction = program.instructions[*PC];
 	if (debug) {
-		printDebug(programInstruction.lineNum);
-		printf("Output\n");
-		for (int i = 0; i < output.length; i++) printf("%s", output.data[i]);
-		printf("\n");
+		printDebug(*PC);
 	} else if (lastOutputLine != output.length) {
 		printf("%s", output.data[output.length - 1]);
 		lastOutputLine = output.length;
 	}
 	// Interpret the instruction
+	struct ProgramInstruction programInstruction = program.instructions[*PC];
 	((struct Instruction*)instructions[programInstruction.instructionIndex])->func(PC, programInstruction.args);
 	checkAndFixRegisters();
 }
@@ -163,7 +120,6 @@ int main(int argc, char* argv[]) {
 
 	int c = 0;
 
-	int paused = 0;
 	int runOne = 0;
 
 	struct winsize w;
@@ -198,6 +154,7 @@ int main(int argc, char* argv[]) {
 			case 'p':
 			case 217:
 				paused = !paused;
+				if (debug) printDebug(PC);
 				break;
 			case 27:
 				return 0;

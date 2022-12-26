@@ -330,6 +330,14 @@ void toLowerStr(char* str) {
 	for (int i = 0; i < strlen(str); i++) str[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] + 32 : str[i];
 }
 
+// int to string
+char* itoa(int num) {
+	char* str = malloc(sizeof(char) * 12);
+	sprintf(str, "%d", num);
+	str = realloc(str, sizeof(char) * (strlen(str) + 1));
+	return str;
+}
+
 /**
  *@brief Return a new string with the leading and trailing whitespace removed
  *

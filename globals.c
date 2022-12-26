@@ -29,6 +29,10 @@ int speed = 1;
 int registerCount = DEFAULT_REGISTER_COUNT;
 int registerSize = DEFAULT_REGISTER_COUNT;
 
+// Screen size
+int screenWidth = 0;
+int screenHeight = 0;
+
 int* registers = NULL;	// Initialized in main()
 int maxNumberSize = 0;	// Initialized in main()
 int compareFlag = 0;

@@ -166,18 +166,44 @@ int main(int argc, char* argv[]) {
 	int paused = 0;
 	int runOne = 0;
 
+	struct winsize w;
+
 	while (1) {
 		end = clock();
 		time = end - start;
 
+		// Get screen size
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+		screenWidth = w.ws_col;
+		screenHeight = w.ws_row;
+
 		// Check if a key was pressed
 		if ((c = getKeyPress()) != -1) {
 			printf("Key pressed: %d\n", c);
-			if (paused && c == 2) runOne = 1;
-
-			if (c == 'p') paused = !paused;
-
-			if (c == 'c') break;
+			switch (c) {
+			case 267:
+			case 266:
+				if (paused) runOne = 1;
+				break;
+			case '+':
+			case '=':
+				if (speed < 100) speed++;
+				interval = 1000000 / speed;
+				break;
+			case '-':
+			case '_':
+				if (speed > 1) speed--;
+				interval = 1000000 / speed;
+				break;
+			case 'p':
+			case 217:
+				paused = !paused;
+				break;
+			case 27:
+				return 0;
+			default:
+				break;
+			}
 		}
 
 		// If the time difference is bigger than the interval, run the instruction

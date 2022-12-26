@@ -12,6 +12,7 @@
 #include "stdarg.h"
 #include "sys/select.h"
 #include "sys/time.h"
+#include "sys/ioctl.h"
 
 #define BOLD "\033[1m"
 #define YELLOW "\033[1;33m"

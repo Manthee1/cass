@@ -11,6 +11,7 @@ struct HelpItem {
 	char* name;
 	char shortName;
 	char* description;
+	int hasValue;  // - Whether or not the option requires a value eg (-s 5)
 	// validation function pointer
 	int (*validate)();
 };
@@ -111,14 +112,14 @@ int speedValidate(int argc, char* argv[], int* index) {
 
 // The help items
 struct HelpItem helpItems[OPTION_COUNT] = {
-	{"help", 'h', "Display this help message", (int (*)())printHelp},
-	{"verbose", 'v', "Display verbose output", verboseValidate},
-	{"version", 'V', "Display version information", (int (*)())printVersion},
-	{"debug", 'd', "Display debug output", debugValidate},
-	{"strict", 0, "Exit with an error if there are any runtime warnings", strictValidate},
-	{"registers", 'r', "How many registers the program has ($0 is not counted)", registersValidate},
-	{"register-size", 'S', "How much bits a register can hold", registerSizeValidate},
-	{"speed", 's', "How many instructions to execute per second (max 100)", speedValidate},
+	{"help", 'h', "Display this help message", 0, (int (*)())printHelp},
+	{"verbose", 'v', "Display verbose output", 1, verboseValidate},
+	{"version", 'V', "Display version information", 0, (int (*)())printVersion},
+	{"debug", 'd', "Display debug output", 0, debugValidate},
+	{"strict", 0, "Exit with an error if there are any runtime warnings", 0, strictValidate},
+	{"registers", 'r', "How many registers the program has ($0 is not counted)", 1, registersValidate},
+	{"register-size", 'S', "How much bits a register can hold", 0, registerSizeValidate},
+	{"speed", 's', "How many instructions to execute per second (max 100)", 1, speedValidate},
 };
 
 /**
@@ -163,6 +164,7 @@ void printHelp() {
 	for (int i = 0; i < OPTION_COUNT; i++) {
 		printf("  --%s", helpItems[i].name);
 		if (helpItems[i].shortName != 0) printf(", -%c", helpItems[i].shortName);
+		if (helpItems[i].hasValue) printf(" <value>");
 
 		// Calculate the amount of tabs to print depending on the length of the name
 		int tabs = 2 - (helpItems[i].name[0] == 'r' ? 1 : 0);

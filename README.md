@@ -15,17 +15,9 @@ gcc cass.c -o cass
 ./cass <file>
 ```
 ## Arguments
-<!-- 	printf("  --debug, -d\t\t\t\tPrint the debug view of the program\n");
-	printf("  --registers <amount>, -r <amount>\tHow many registers the program has ($0 is not counted)\n");
-	printf("  --register-size <amount>, -S <amount>\tHow much bytes a register can hold\n");
-	printf("  --verbose, -v\t\t\t\tPrint all the normally ignored warnings and errors\n");
-	printf("  --version, -V\t\t\t\tPrint the version of the program\n");
-	printf("  --speed <amount>, -s <amount>\t\tHow many instructions to execute per second (max 100)\n");
-	printf("  --strict\t\t\t\tExit with an error if there are any runtime warnings\n");
-	printf("  --help, -h\t\t\t\tPrint this help message\n"); -->
 - `-d` or `--debug` - Shows you a nice debug screen
 - `-r <amount>` or `--registers <amount>` - Specifies max amount of registers ($0 is not counted)
-- `-S <amount>` or `--register-size <amount>` - Specifies how much bytes a register can hold
+- `-S <amount>` or `--register-size <amount>` - Specifies how much bits a register can hold
 - `-s <amount>` or `--speed <amount>` - How many instructions to execute per second (max 100)
 - `-V` or `--version` - Print the version of the program
 - `-v` or `--verbose` - Print all the normally ignored warnings and errors

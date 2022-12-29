@@ -28,15 +28,16 @@ void checkAndFixRegisters() {
 
 	// if the value in the register is bigger than the register size, wrap it
 	for (int i = 0; i < registerCount; i++) {
-		if (registers[i] <= registerSize) continue;
+		if (registers[i] <= maxNumberSize) continue;
 		int oldVal = registers[i];
 		isValid = 0;
 		// Wrap the value
-		registers[i] = registers[i] % registerSize;
+		registers[i] = registers[i] % maxNumberSize;
 		if (verbose == 0) continue;
-		printException("Register " MAGENTA "$%d" RESET " with the value of " MAGENTA "%d" RESET
-					   " is bigger than the register size of " MAGENTA "%d" RESET " - Wrapping\n",
-					   WARNING, -1, i, oldVal, registerSize);
+		printException("Overflow at register " MAGENTA "$%d" RESET " - Value " MAGENTA "%d" RESET
+					   " is bigger than the max value of " MAGENTA "%d" RESET
+					   " - Max register size: %d-bits - Wrapping",
+					   WARNING, -1, i, oldVal, maxNumberSize, registerSize);
 	}
 	if (strict == 1 && isValid == 0)
 		exitMsg("Exiting due to" RED " strict mode" RESET "\nUse -v to see runtime warnings\n", 1);
@@ -64,8 +65,9 @@ int main(int argc, char* argv[]) {
 
 	// Initialize the registers
 	registers = calloc(registerCount, sizeof(int));
-	maxNumberSize = (int)pow(2, registerSize * 8 - 1) - 1;
-
+	maxNumberSize = pow2(registerSize - 1) - 1;
+	// printf("Max number size: %lld\n", maxNumberSize);
+	// return 0;
 	// Open the file and check if it exists
 	char* filename = argv[1];
 	FILE* file = fopen(filename, "r");

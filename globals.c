@@ -36,8 +36,8 @@ int screenHeight = 0;
 // Debug
 int paused = 0;
 
-int* registers = NULL;	// Initialized in main()
-int maxNumberSize = 0;	// Initialized in main()
+int* registers = NULL;		  // Initialized in main()
+long long maxNumberSize = 0;  // Initialized in main()
 int compareFlag = 0;
 char* argTypeMap[6] = {
 	"Register", "Number", "Label", "Data Pointer (Int)", "Data Pointer (Str)", "Data Pointer (Generic)"};

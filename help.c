@@ -117,7 +117,7 @@ struct HelpItem helpItems[OPTION_COUNT] = {
 	{"debug", 'd', "Display debug output", debugValidate},
 	{"strict", 0, "Exit with an error if there are any runtime warnings", strictValidate},
 	{"registers", 'r', "How many registers the program has ($0 is not counted)", registersValidate},
-	{"register-size", 'S', "How much bytes a register can hold", registerSizeValidate},
+	{"register-size", 'S', "How much bits a register can hold", registerSizeValidate},
 	{"speed", 's', "How many instructions to execute per second (max 100)", speedValidate},
 };
 

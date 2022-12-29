@@ -236,11 +236,11 @@ int validateArgument(struct DataList dataList, char* arg, int argType, int lineN
 			}
 			break;
 		case NUMBER:
-			if (atoi(arg) < -maxNumberSize || atoi(arg) > maxNumberSize) {
+			if (atoll(arg) < -maxNumberSize || atoll(arg) > maxNumberSize) {
 				printException("Invalid number", ERROR, lineNum, NULL);
-				printf("\tNumber: %s is too big (Max: %d)\n", arg, maxNumberSize);
-				printf("\tYou can supply " YELLOW "-s <size>" RESET
-					   " to change the max size of a register (in bytes)\n");
+				printf("\tNumber: %s is too big (Max: %lld)\n", arg, maxNumberSize);
+				printf("\tYou can supply " YELLOW "-S <size>" RESET
+					   " to change the max size of a register (in bits)\n");
 				return 1;
 			}
 			break;
@@ -328,6 +328,12 @@ void clear() { system("clear || cls"); }
 
 void toLowerStr(char* str) {
 	for (int i = 0; i < strlen(str); i++) str[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] + 32 : str[i];
+}
+
+unsigned int pow2(int n) {
+	unsigned int val = 1;
+	for (int i = 0; i < n; i++) val *= 2;
+	return val;
 }
 
 // int to string

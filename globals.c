@@ -3,7 +3,7 @@
 #define GLOBALS_C
 #include "headers.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.2.0"
 
 #define DEFAULT_REGISTER_COUNT 16
 #define DEFAULT_REGISTER_SIZE 32

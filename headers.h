@@ -79,8 +79,7 @@ struct Program {
 	struct ProgramInstruction* instructions;
 };
 
-// A list of strings
-struct StringArray {
+struct Output {
 	int length;
 	char** data;
 };

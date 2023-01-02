@@ -7,16 +7,49 @@
 
 void printException(char* message, enum EXCEPTION_TYPE type, int lineNum, ...);
 
+// Initialize a new array of strings for the output
+void newOutputLine() {
+	if (output.length == 0)
+		output.data = calloc(1, sizeof(char*));
+	else
+		output.data = realloc(output.data, (output.length + 1) * sizeof(char*));
+
+	output.data[output.length] = calloc(1, sizeof(char));
+	output.length++;
+}
+
 /**
- *@brief push a string to the end of a StringArray
+ * @brief Add a string to the output array and split it into multiple lines when \\n is found
  *
- * @param arr - the StringArray to push to
- * @param str - the string to push
+ * @param str
  */
-void pushString(struct StringArray* arr, char* str) {
-	arr->data = realloc(arr->data, sizeof(char*) * (arr->length + 1));
-	arr->data[arr->length] = str;
-	arr->length++;
+void addToOutput(char* str) {
+	// Check if the output array is empty
+	if (output.length == 0) newOutputLine();
+
+	// Get the length of the string
+	int strLen = strlen(str);
+	// Get the length of the last line
+	int lastLineLen = strlen(output.data[output.length - 1]);
+
+	// strtok and then copy the string to the output array
+	char* token = strtok(str, "\n");
+	while (token != NULL) {
+		// Allocate enough memory for the new line
+		output.data[output.length - 1] =
+			realloc(output.data[output.length - 1], (lastLineLen + strlen(token) + 1) * sizeof(char));
+		// Copy the string to the output array
+		strcpy(&output.data[output.length - 1][lastLineLen], token);
+		// Update the length of the last line
+		lastLineLen += strlen(token);
+		// Get the next token
+		token = strtok(NULL, "\n");
+		// If there is a next token, create a new line
+		if (token != NULL) newOutputLine();
+	}
+
+	// If the string ends with a newline, create a new line
+	if (str[strLen - 1] == '\n') newOutputLine();
 }
 
 /**

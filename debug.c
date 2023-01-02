@@ -10,7 +10,7 @@ void printDebug(int PC) {
 
 	struct ProgramInstruction programInstruction = program.instructions[PC];
 	int lineNum = programInstruction.lineNum;
-	int currentOutputIndex = 0;
+	int currentOutputIndex = output.length > screenHeight - 6 ? output.length - (screenHeight - 6) : 0;
 
 	// Runnning or paused
 	paused ? printf(BLACK BG_BLUE " ⏸︎ PAUSED  (F6) " RESET)
@@ -47,8 +47,10 @@ void printDebug(int PC) {
 			for (int j = 0; j < 20 - strlen(line); j++) printf(" ");
 			printf(" | ");
 			// Print empty spaces after the line
-		}
-		if (i == codeSection.length - 1) printf("       -------------------------");
+		} else if (i == codeSection.length - 1)
+			printf("       ------------------------- ");
+		else
+			printf("                                 ");
 		// Print the registers
 
 		if (i < registerCount) {
@@ -62,36 +64,17 @@ void printDebug(int PC) {
 				printf(GREEN);
 			printf("%8d" RESET, registers[i]);
 			printf(" | ");
-		}
-		if (i == registerCount) printf(" -------------------");
-
+		} else if (i == registerCount)
+			printf(" ------------------- ");
+		else
+			printf("                     ");
 		// Print the output
-		if (currentOutputIndex < output.length) {
-			printf(" | ");
-			// Print until \n
-			while (currentOutputIndex < output.length && output.data[currentOutputIndex][0] != '\n') {
-				printf("%s", output.data[currentOutputIndex]);
-				currentOutputIndex++;
-			}
-			currentOutputIndex++;
-		}
+		if (output.length > 0 && output.length > i) printf("%s", output.data[i]);
+
 		printf("\n");  // if (codeSection.end < i) break;
 	}
-	if (paused) printf("Use ⏵︎ or ⏷︎ to step through the program\n");
-
-	// for (int i = codeSection.start + 1; i < codeSection.end; i++) {
-	// 	// if (i < codeSection.start || i >= codeSection.end) continue;
-
-	// 	int index = i - codeSection.start - 1;
-	// 	// If i is smaller then register count, print the register
-	// 	// Print 3 registers per line
-	// 	if (index * 3 < registerCount) {
-	// 		printf("| ");
-	// 		for (int j = 0; j < 3; j++) {
-	// 			if (index * 3 + j >= registerCount) break;
-	// 			printf("%2d: %5d | ", index * 3 + j, registers[index * 3 + j]);
-	// 		}
-	// 	}
-	// 	printf("\n");
-	// }
+	if (paused) {
+		printf("Screen height: %d", screenHeight);
+		printf("Use ⏵︎ or ⏷︎ to step through the program\n");
+	}
 }

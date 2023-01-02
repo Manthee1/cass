@@ -42,6 +42,7 @@ int compareFlag = 0;
 char* argTypeMap[6] = {
 	"Register", "Number", "Label", "Data Pointer (Int)", "Data Pointer (Str)", "Data Pointer (Generic)"};
 enum ARG_TYPE { REGISTER, NUMBER, LABEL, DATA_POINTER_INT, DATA_POINTER_STR, DATA_POINTER_GENERIC, UNKNOWN };
-struct StringArray output = {0, NULL};
+struct Output output = {0, NULL};
+// Allot memory for the output
 
 #endif

@@ -27,7 +27,7 @@ int verbose = 0;
 int strict = 0;
 int speed = 1;
 int registerCount = DEFAULT_REGISTER_COUNT;
-int registerSize = DEFAULT_REGISTER_COUNT;
+int registerSize = DEFAULT_REGISTER_SIZE;
 
 // Screen size
 int screenWidth = 0;

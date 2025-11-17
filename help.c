@@ -13,7 +13,7 @@ struct HelpItem {
 	char* description;
 	int hasValue;  // - Whether or not the option requires a value eg (-s 5)
 	// validation function pointer
-	int (*validate)();
+	int (*validate)(int, char*[], int*);
 };
 
 /**
@@ -110,15 +110,25 @@ int speedValidate(int argc, char* argv[], int* index) {
 	return 0;
 }
 
+// Wrapper functions to adapt no-arg handlers to the validate signature
+int printHelpOption(int argc, char* argv[], int* index) {
+	printHelp();
+	return 0; // unreachable because printHelp() exits
+}
+
+int printVersionOption(int argc, char* argv[], int* index) {
+	return printVersion();
+}
+
 // The help items
 struct HelpItem helpItems[OPTION_COUNT] = {
-	{"help", 'h', "Display this help message", 0, (int (*)())printHelp},
-	{"verbose", 'v', "Display verbose output", 1, verboseValidate},
-	{"version", 'V', "Display version information", 0, (int (*)())printVersion},
+	{"help", 'h', "Display this help message", 0, printHelpOption},
+	{"verbose", 'v', "Display verbose output", 0, verboseValidate},
+	{"version", 'V', "Display version information", 0, printVersionOption},
 	{"debug", 'd', "Display debug output", 0, debugValidate},
 	{"strict", 0, "Exit with an error if there are any runtime warnings", 0, strictValidate},
 	{"registers", 'r', "How many registers the program has ($0 is not counted)", 1, registersValidate},
-	{"register-size", 'S', "How much bits a register can hold", 0, registerSizeValidate},
+	{"register-size", 'S', "How much bits a register can hold", 1, registerSizeValidate},
 	{"speed", 's', "How many instructions to execute per second (max 100)", 1, speedValidate},
 };
 
